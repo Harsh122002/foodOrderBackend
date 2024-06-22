@@ -9,6 +9,30 @@ const generateOtp = () =>
 exports.register = async (req, res) => {
   const { name, email, password, mobile } = req.body;
 
+  // Regular expressions for validation
+  const nameRegex = /^[A-Za-z]+$/;
+  const mobileRegex = /^\d{10}$/;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Validate name
+  if (!nameRegex.test(name)) {
+    return res
+      .status(400)
+      .json({ msg: "Name must contain only alphabetic characters" });
+  }
+
+  // Validate mobile
+  if (!mobileRegex.test(mobile)) {
+    return res
+      .status(400)
+      .json({ msg: "Mobile number must be exactly 10 digits" });
+  }
+
+  // Validate email
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ msg: "Invalid email format" });
+  }
+
   try {
     let user = await User.findOne({ email });
     if (user) {
@@ -39,6 +63,8 @@ exports.register = async (req, res) => {
 
 exports.login = async (req, res) => {
   const { email, password } = req.body;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
   try {
     let user = await User.findOne({ email });
     if (!user) {
@@ -47,7 +73,9 @@ exports.login = async (req, res) => {
     if (user.role === "admin") {
       return res.status(403).json({ message: "You are the owner" });
     }
-
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ msg: "Invalid email format" });
+    }
     // Check if the password is correct
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
@@ -75,12 +103,16 @@ exports.login = async (req, res) => {
 
 exports.verifyOtp = async (req, res) => {
   const { email, otp } = req.body;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   try {
     const user = await User.findOne({ email });
 
     if (!user || user.otp !== otp || user.otpExpires < Date.now()) {
       return res.status(400).json({ msg: "Invalid OTP" });
+    }
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ msg: "Invalid email format" });
     }
 
     user.otp = undefined;
