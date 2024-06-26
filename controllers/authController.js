@@ -89,6 +89,7 @@ exports.login = async (req, res) => {
       { expiresIn: "1h" },
       (err, token) => {
         if (err) throw err;
+
         res.json({
           message: "Login successful",
           token,
