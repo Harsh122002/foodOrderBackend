@@ -14,6 +14,7 @@ app.use(express.json());
 // Middleware
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use("/uploads", express.static("uploads"));
 
 // Routes
 app.use(cors());
