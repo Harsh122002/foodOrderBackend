@@ -9,8 +9,9 @@ const {
   adminLogin,
   verifyToken,
 } = require("../controllers/authController");
-const { addGroupItem } = require("../controllers/group");
+const { addGroupItem, getAllGroupItems } = require("../controllers/group");
 const authenticateJWT = require("../middleware/authMiddleware");
+const { addProductItem, getAllProduct } = require("../controllers/product");
 
 router.post("/register", register);
 router.post("/verify-otp", verifyOtp);
@@ -19,4 +20,8 @@ router.post("/request-password-reset", requestPasswordReset);
 router.post("/verify-password", verifyOtpAndUpdatePassword);
 router.post("/adminLogin", adminLogin);
 router.post("/addGroupItem", authenticateJWT, addGroupItem);
+router.get("/getAllGroup", getAllGroupItems);
+router.post("/addProduct", authenticateJWT, addProductItem);
+router.get("/getAllProduct", getAllProduct);
+
 module.exports = router;

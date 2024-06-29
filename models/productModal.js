@@ -1,12 +1,14 @@
-const { default: mongoose } = require("mongoose");
+const mongoose = require("mongoose");
 
 const ProductSchema = new mongoose.Schema({
-  productName: { type: String, require: true },
+  productName: { type: String, required: true },
   groupName: {
-    type: mongoose.Schema.Types.groupName,
+    type: mongoose.Schema.Types.ObjectId,
     ref: "GroupItem",
     required: true,
-  }, // New field for group name
-  filePath: { type: String, required: true }, // New field for file path
+  }, // Assuming `GroupItem` is the model name for group references
+  filePath: { type: String, required: true },
   timeAdded: { type: Date, default: Date.now },
 });
+
+module.exports = mongoose.model("ProductItem", ProductSchema);

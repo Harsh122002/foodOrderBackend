@@ -31,3 +31,11 @@ exports.addGroupItem = (req, res) => {
     }
   });
 };
+exports.getAllGroupItems = async (req, res) => {
+  try {
+    const groupItems = await GroupItem.find();
+    res.status(200).json(groupItems);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
