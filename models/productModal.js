@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 
 const ProductSchema = new mongoose.Schema({
   productName: { type: String, required: true },
+  price: { type: String, required: true },
   groupName: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "GroupItem",

@@ -14,7 +14,7 @@ exports.addProductItem = (req, res) => {
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      const { productName, groupName } = req.body;
+      const { productName, price, groupName } = req.body;
       const filePath = req.file.path;
       console.log(req.body);
       const existingGroup = await GroupItem.findById(groupName);
@@ -25,6 +25,7 @@ exports.addProductItem = (req, res) => {
       // Create a new ProductItem instance using the Mongoose model
       const newProductItem = new ProductItem({
         productName,
+        price,
         groupName,
         filePath,
       });
