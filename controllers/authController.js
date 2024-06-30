@@ -82,7 +82,8 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: "Invalid password" });
     }
 
-    const payload = { user: { id: user.id } };
+    const payload = { user: { id: user._id } };
+    const userId = user._id;
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
@@ -92,7 +93,7 @@ exports.login = async (req, res) => {
 
         res.json({
           message: "Login successful",
-          payload,
+          userId,
           token,
         });
       }
@@ -235,5 +236,22 @@ exports.adminLogin = async (req, res) => {
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error");
+  }
+};
+exports.getUserDetail = async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    // Fetch user details from the database
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Send user details as JSON response
+    res.json(user);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Server error" });
   }
 };
