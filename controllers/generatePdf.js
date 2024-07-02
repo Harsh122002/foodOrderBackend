@@ -8,7 +8,7 @@ exports.GeneratePdf = async (req, res) => {
 
   try {
     const orderData = await order.findById(orderId);
-
+    console.log(orderId);
     if (!orderData) {
       return res.status(404).send("Order not found");
     }
@@ -22,7 +22,7 @@ exports.GeneratePdf = async (req, res) => {
     console.log(`Output path for PDF: ${outputPath}`);
 
     // Generate the PDF
-    await GeneratePDF(orderData, outputPath);
+    await GeneratePDF(orderData, outputPath, orderId);
 
     // Check if the file exists before attempting to send it
     if (fs.existsSync(outputPath)) {

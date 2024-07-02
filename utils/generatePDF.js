@@ -2,7 +2,8 @@ const PDFDocument = require("pdfkit");
 const fs = require("fs");
 const path = require("path");
 
-async function GeneratePDF(orderData, outputPath) {
+async function GeneratePDF(orderData, outputPath, OrderId) {
+  console.log(OrderId);
   try {
     const doc = new PDFDocument({ size: "A4", margin: 50 });
     const stream = fs.createWriteStream(outputPath);
@@ -11,18 +12,19 @@ async function GeneratePDF(orderData, outputPath) {
     // Title
     doc
       .font("Helvetica-Bold")
-      .fontSize(16)
-      .text(`Order ID: ${orderData._id}`, { align: "right" });
-
-    // Title
-    doc
-      .font("Helvetica-Bold")
       .fontSize(24)
-      .text("Place Your Order", { align: "center" })
-      .moveDown(1);
+      .text("Place Your Order", { align: "center" });
+
+    // Order ID
+    doc.moveDown();
+    doc.font("Helvetica-Bold").fontSize(14).text(`Order ID: ${OrderId}`);
+    doc.moveDown();
 
     // Customer Information
-    doc.font("Helvetica-Bold").fontSize(18).text("Customer Information");
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(18)
+      .text("Customer Information", { underline: true });
     doc.moveDown();
     doc.font("Helvetica").fontSize(12);
     doc.text(`Name: ${orderData.name}`);
@@ -31,30 +33,42 @@ async function GeneratePDF(orderData, outputPath) {
     doc.moveDown();
 
     // Products
-    doc.font("Helvetica-Bold").fontSize(18).text("Products");
+    doc
+      .font("Helvetica-Bold")
+      .fontSize(18)
+      .text("Products", { underline: true });
     doc.moveDown();
 
-    // Table Headers
+    // Table Header
+    // Table Header
     doc.font("Helvetica-Bold").fontSize(12);
-    doc.text("Product", 50, doc.y, { continued: true });
-    doc.text("Quantity", 200, doc.y, { continued: true });
-    doc.text("Price", 300, doc.y, { continued: true });
-    doc.text("Total", 400, doc.y);
+    doc.text("Product", 30, doc.y, { width: 200, continued: true });
+    doc.text("Quantity", 130, doc.y, { width: 100, continued: true });
+    doc.text("Price", 180, doc.y, { width: 100, continued: true });
+    doc.text("Total", 290, doc.y, { width: 100, continued: true });
     doc.moveDown();
 
     // Table Rows
-    doc.font("Helvetica").fontSize(12);
     orderData.products.forEach((product) => {
-      doc.text(product.name, 50, doc.y, { continued: true });
-      doc.text(product.quantity.toString(), 200, doc.y, { continued: true });
-      doc.text(`Rs. ${product.price}`, 300, doc.y, { continued: true });
-      doc.text(`Rs. ${product.price * product.quantity}`, 400, doc.y);
+      doc.font("Helvetica").fontSize(12);
+      doc.text(product.name, 30, doc.y, { width: 200, continued: true });
+      doc.text(product.quantity.toString(), 130, doc.y, {
+        width: 100,
+        continued: true,
+      });
+      doc.text(`Rs. ${product.price}`, 180, doc.y, {
+        width: 100,
+        continued: true,
+      });
+      doc.text(`Rs. ${product.price * product.quantity}`, 290, doc.y, {
+        width: 100,
+        continued: true,
+      });
       doc.moveDown();
     });
 
     // Total Amount
     doc
-      .moveDown()
       .font("Helvetica-Bold")
       .fontSize(14)
       .text(`Total Amount: Rs. ${orderData.totalAmount}`);
@@ -70,6 +84,7 @@ async function GeneratePDF(orderData, outputPath) {
     // Finalize PDF and close the stream
     doc.end();
     console.log(`PDF generated successfully at ${outputPath}`);
+
     return new Promise((resolve, reject) => {
       stream.on("finish", () => resolve(outputPath));
       stream.on("error", (err) => reject(err));
