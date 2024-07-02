@@ -28,7 +28,7 @@ exports.GeneratePdf = async (req, res) => {
     if (fs.existsSync(outputPath)) {
       console.log(`File exists at: ${outputPath}`);
 
-      // Open the PDF in the browser
+      // Send the PDF file as a response
       res.setHeader("Content-Type", "application/pdf");
       res.sendFile(outputPath, (err) => {
         if (err) {
@@ -36,6 +36,16 @@ exports.GeneratePdf = async (req, res) => {
           return res.status(500).send("Error sending file");
         } else {
           console.log("File sent successfully");
+          // Optional: Clean up the file after sending
+          setTimeout(() => {
+            fs.unlink(outputPath, (err) => {
+              if (err) {
+                console.error("Error deleting file:", err);
+              } else {
+                console.log("File deleted successfully");
+              }
+            });
+          }, 60000); // 60 seconds delay before deleting the file
         }
       });
     } else {

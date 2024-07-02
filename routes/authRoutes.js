@@ -13,6 +13,8 @@ const {
 const { addGroupItem, getAllGroupItems } = require("../controllers/group");
 const authenticateJWT = require("../middleware/authMiddleware");
 const { addProductItem, getAllProduct } = require("../controllers/product");
+const { OrderDetail } = require("../controllers/order");
+const { GeneratePdf } = require("../controllers/generatePdf");
 
 router.post("/register", register);
 router.post("/verify-otp", verifyOtp);
@@ -25,5 +27,7 @@ router.get("/getAllGroup", getAllGroupItems);
 router.post("/addProduct", authenticateJWT, addProductItem);
 router.get("/getAllProduct", getAllProduct);
 router.post("/getUserDetail", authenticateJWT, getUserDetail);
+router.post("/orderDetail", authenticateJWT, OrderDetail);
+router.post("/generatePdf", GeneratePdf);
 
 module.exports = router;
