@@ -11,10 +11,18 @@ async function GeneratePDF(orderData, outputPath) {
     // Title
     doc
       .font("Helvetica-Bold")
+      .fontSize(16)
+      .text(`Order ID: ${orderData._id}`, { align: "right" });
+
+    // Title
+    doc
+      .font("Helvetica-Bold")
       .fontSize(24)
-      .text("Place Your Order", { align: "center" });
+      .text("Place Your Order", { align: "center" })
+      .moveDown(1);
 
     // Customer Information
+    doc.font("Helvetica-Bold").fontSize(18).text("Customer Information");
     doc.moveDown();
     doc.font("Helvetica").fontSize(12);
     doc.text(`Name: ${orderData.name}`);
@@ -25,16 +33,28 @@ async function GeneratePDF(orderData, outputPath) {
     // Products
     doc.font("Helvetica-Bold").fontSize(18).text("Products");
     doc.moveDown();
+
+    // Table Headers
+    doc.font("Helvetica-Bold").fontSize(12);
+    doc.text("Product", 50, doc.y, { continued: true });
+    doc.text("Quantity", 200, doc.y, { continued: true });
+    doc.text("Price", 300, doc.y, { continued: true });
+    doc.text("Total", 400, doc.y);
+    doc.moveDown();
+
+    // Table Rows
+    doc.font("Helvetica").fontSize(12);
     orderData.products.forEach((product) => {
-      doc.text(`Product: ${product.name}`);
-      doc.text(`Quantity: ${product.quantity}`);
-      doc.text(`Price: Rs. ${product.price}`);
-      doc.text(`Total: Rs. ${product.price * product.quantity}`);
+      doc.text(product.name, 50, doc.y, { continued: true });
+      doc.text(product.quantity.toString(), 200, doc.y, { continued: true });
+      doc.text(`Rs. ${product.price}`, 300, doc.y, { continued: true });
+      doc.text(`Rs. ${product.price * product.quantity}`, 400, doc.y);
       doc.moveDown();
     });
 
     // Total Amount
     doc
+      .moveDown()
       .font("Helvetica-Bold")
       .fontSize(14)
       .text(`Total Amount: Rs. ${orderData.totalAmount}`);
@@ -49,7 +69,6 @@ async function GeneratePDF(orderData, outputPath) {
 
     // Finalize PDF and close the stream
     doc.end();
-
     console.log(`PDF generated successfully at ${outputPath}`);
     return new Promise((resolve, reject) => {
       stream.on("finish", () => resolve(outputPath));
