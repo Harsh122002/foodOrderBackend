@@ -15,6 +15,7 @@ const authenticateJWT = require("../middleware/authMiddleware");
 const { addProductItem, getAllProduct } = require("../controllers/product");
 const { OrderDetail } = require("../controllers/order");
 const { GeneratePdf } = require("../controllers/generatePdf");
+const { Payment, PaymentVerify } = require("../controllers/payment");
 
 router.post("/register", register);
 router.post("/verify-otp", verifyOtp);
@@ -29,5 +30,7 @@ router.get("/getAllProduct", getAllProduct);
 router.post("/getUserDetail", authenticateJWT, getUserDetail);
 router.post("/orderDetail", authenticateJWT, OrderDetail);
 router.post("/generatePdf", GeneratePdf);
+router.post("/payment", Payment);
+router.post("/verify", PaymentVerify);
 
 module.exports = router;
