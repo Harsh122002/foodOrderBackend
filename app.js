@@ -4,7 +4,6 @@ const bodyParser = require("body-parser");
 const authRoutes = require("./routes/authRoutes");
 require("dotenv").config();
 const cors = require("cors");
-const Razorpay = require("razorpay");
 
 const app = express();
 
@@ -19,8 +18,6 @@ app.use(cors());
 app.use("/groups", express.static("groups"));
 
 // Log environment variables to ensure they are being read correctly
-console.log('RAZORPAY_KEY_ID:', process.env.RAZORPAY_KEY_ID);
-console.log('RAZORPAY_KEY_SECRET:', process.env.RAZORPAY_KEY_SECRET);
 
 // Razorpay instance
 

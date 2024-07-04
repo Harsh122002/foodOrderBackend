@@ -9,6 +9,7 @@ const {
   adminLogin,
   verifyToken,
   getUserDetail,
+  UpdateUserDetail,
 } = require("../controllers/authController");
 const { addGroupItem, getAllGroupItems } = require("../controllers/group");
 const authenticateJWT = require("../middleware/authMiddleware");
@@ -32,5 +33,6 @@ router.post("/orderDetail", authenticateJWT, OrderDetail);
 router.post("/generatePdf", GeneratePdf);
 router.post("/payment", Payment);
 router.post("/verify", PaymentVerify);
+router.put("/updateUserDetail", authenticateJWT, UpdateUserDetail);
 
 module.exports = router;

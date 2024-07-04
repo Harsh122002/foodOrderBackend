@@ -255,3 +255,29 @@ exports.getUserDetail = async (req, res) => {
     res.status(500).json({ error: "Server error" });
   }
 };
+exports.UpdateUserDetail = async (req, res) => {
+  try {
+    const { email, name, mobile, address } = req.body;
+
+    // Find the user by email
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Update user details
+    user.name = name;
+    user.mobile = mobile;
+    user.address = address;
+    user.update = new Date();
+
+    // Save changes to the database
+    await user.save();
+
+    // Send updated user details in response
+    res.status(200).json(user);
+  } catch (error) {
+    console.error("Error updating user details:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
