@@ -281,3 +281,14 @@ exports.UpdateUserDetail = async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
+// controllers/userController.js
+exports.getUserCount = async (req, res) => {
+  try {
+    const role = "user";
+    const userCount = await User.countDocuments({ role }); // Corrected query syntax
+    res.status(200).json({ userCount });
+  } catch (err) {
+    console.error("Error fetching user count:", err);
+    res.status(500).json({ error: "Failed to fetch user count" });
+  }
+};

@@ -10,11 +10,20 @@ const {
   verifyToken,
   getUserDetail,
   UpdateUserDetail,
+  getUserCount,
 } = require("../controllers/authController");
 const { addGroupItem, getAllGroupItems } = require("../controllers/group");
 const authenticateJWT = require("../middleware/authMiddleware");
 const { addProductItem, getAllProduct } = require("../controllers/product");
-const { OrderDetail } = require("../controllers/order");
+const {
+  OrderDetail,
+  getAllOrder,
+  OrderDelete,
+
+  getAllOrderStatuses,
+  getAllPendingOrder,
+  updateOrderStatus,
+} = require("../controllers/order");
 const { GeneratePdf } = require("../controllers/generatePdf");
 const { Payment, PaymentVerify } = require("../controllers/payment");
 
@@ -34,5 +43,10 @@ router.post("/generatePdf", GeneratePdf);
 router.post("/payment", Payment);
 router.post("/verify", PaymentVerify);
 router.put("/updateUserDetail", authenticateJWT, UpdateUserDetail);
-
+router.post("/orderDelete", OrderDelete);
+router.post("/getAllOrder", getAllOrder);
+router.get("/order-statuses", getAllOrderStatuses);
+router.get("/user-count", getUserCount);
+router.get("/all-pending-orders", getAllPendingOrder);
+router.post("/update-order-status", updateOrderStatus);
 module.exports = router;
