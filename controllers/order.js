@@ -124,7 +124,7 @@ exports.getAllPendingOrder = async (req, res) => {
         paymentMethod: order.paymentMethod,
         // Add other order details as needed
         user: {
-          username: user.username,
+          username: user.name,
           email: user.email,
           // Add other user details as needed
         },
@@ -155,5 +155,171 @@ exports.updateOrderStatus = async (req, res) => {
   } catch (error) {
     console.error("Error updating order status:", error);
     res.status(500).json({ error: "Failed to update order status" });
+  }
+};
+exports.getAllCompleteOrder = async (req, res) => {
+  try {
+    // Find all completed orders
+    const completedOrders = await Order.find({ status: "complete" });
+
+    // If no completed orders found, return an empty response
+    if (!completedOrders || completedOrders.length === 0) {
+      return res.status(404).json({ message: "No completed orders found" });
+    }
+
+    // Prepare an array to store detailed order information with user details
+    let ordersWithUserDetails = [];
+
+    // Loop through each completed order and fetch user details
+    for (let order of completedOrders) {
+      const user = await User.findById(order.userId); // Assuming userId is used to reference users
+
+      // If user not found, log an error and skip this order
+      if (!user) {
+        console.error(`User not found for order ${order._id}`);
+        continue; // Skip this order if user is not found
+      }
+
+      // Construct order object with user details
+      const orderWithUser = {
+        orderId: order._id,
+        status: order.status,
+        address: order.address,
+        totalAmount: order.totalAmount, // Grand total of the order
+        products: order.products.map((product) => ({
+          name: product.name,
+          quantity: product.quantity,
+          price: product.price,
+          totalPrice: product.quantity * product.price,
+        })),
+        paymentMethod: order.paymentMethod,
+        user: {
+          username: user.name,
+          email: user.email,
+          // Add other user details as needed
+        },
+      };
+
+      ordersWithUserDetails.push(orderWithUser);
+    }
+
+    // Return the array of orders with user details
+    res.status(200).json(ordersWithUserDetails);
+  } catch (error) {
+    console.error("Error fetching completed orders with user details:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch completed orders with user details" });
+  }
+};
+
+exports.getAllRunningOrder = async (req, res) => {
+  try {
+    // Find all pending orders
+    const pendingOrders = await Order.find({ status: "running" });
+
+    // If no pending orders found, return an empty response
+    if (!pendingOrders || pendingOrders.length === 0) {
+      return res.status(404).json({ message: "No pending orders found" });
+    }
+
+    // Prepare an array to store detailed order information with user details
+    let ordersWithUserDetails = [];
+
+    // Loop through each pending order and fetch user details
+    for (let order of pendingOrders) {
+      const user = await User.findById(order.userId); // Assuming userId is used to reference users
+
+      // If user not found (which ideally shouldn't happen), skip this order or handle accordingly
+      if (!user) {
+        continue; // Skip this order if user is not found
+      }
+
+      // Construct order object with user details
+      const orderWithUser = {
+        orderId: order._id,
+        status: order.status,
+        address: order.address,
+        totalAmount: order.totalAmount, // Grand total of the order
+        products: order.products.map((product) => ({
+          name: product.name,
+          quantity: product.quantity,
+          price: product.price,
+          totalPrice: product.quantity * product.price,
+        })),
+        paymentMethod: order.paymentMethod,
+        // Add other order details as needed
+        user: {
+          username: user.name,
+          email: user.email,
+          // Add other user details as needed
+        },
+      };
+
+      ordersWithUserDetails.push(orderWithUser);
+    }
+
+    // Return the array of orders with user details
+    res.status(200).json(ordersWithUserDetails);
+  } catch (error) {
+    console.error("Error fetching pending orders with user details:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch pending orders with user details" });
+  }
+};
+exports.getAllDeclinedOrder = async (req, res) => {
+  try {
+    // Find all pending orders
+    const pendingOrders = await Order.find({ status: "declined" });
+
+    // If no pending orders found, return an empty response
+    if (!pendingOrders || pendingOrders.length === 0) {
+      return res.status(404).json({ message: "No pending orders found" });
+    }
+
+    // Prepare an array to store detailed order information with user details
+    let ordersWithUserDetails = [];
+
+    // Loop through each pending order and fetch user details
+    for (let order of pendingOrders) {
+      const user = await User.findById(order.userId); // Assuming userId is used to reference users
+
+      // If user not found (which ideally shouldn't happen), skip this order or handle accordingly
+      if (!user) {
+        continue; // Skip this order if user is not found
+      }
+
+      // Construct order object with user details
+      const orderWithUser = {
+        orderId: order._id,
+        status: order.status,
+        address: order.address,
+        totalAmount: order.totalAmount, // Grand total of the order
+        products: order.products.map((product) => ({
+          name: product.name,
+          quantity: product.quantity,
+          price: product.price,
+          totalPrice: product.quantity * product.price,
+        })),
+        paymentMethod: order.paymentMethod,
+        // Add other order details as needed
+        user: {
+          username: user.name,
+          email: user.email,
+          // Add other user details as needed
+        },
+      };
+
+      ordersWithUserDetails.push(orderWithUser);
+    }
+
+    // Return the array of orders with user details
+    res.status(200).json(ordersWithUserDetails);
+  } catch (error) {
+    console.error("Error fetching pending orders with user details:", error);
+    res
+      .status(500)
+      .json({ error: "Failed to fetch pending orders with user details" });
   }
 };

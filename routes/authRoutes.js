@@ -23,6 +23,9 @@ const {
   getAllOrderStatuses,
   getAllPendingOrder,
   updateOrderStatus,
+  getAllCompleteOrder,
+  getAllDeclinedOrder,
+  getAllRunningOrder,
 } = require("../controllers/order");
 const { GeneratePdf } = require("../controllers/generatePdf");
 const { Payment, PaymentVerify } = require("../controllers/payment");
@@ -48,5 +51,9 @@ router.post("/getAllOrder", getAllOrder);
 router.get("/order-statuses", getAllOrderStatuses);
 router.get("/user-count", getUserCount);
 router.get("/all-pending-orders", getAllPendingOrder);
+router.get("/all-completed-orders", getAllCompleteOrder);
+router.get("/all-running-orders", getAllRunningOrder);
+router.get("/all-declined-orders", getAllDeclinedOrder);
+
 router.post("/update-order-status", updateOrderStatus);
 module.exports = router;
