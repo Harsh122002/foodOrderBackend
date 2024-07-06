@@ -85,11 +85,9 @@ exports.DeleteProduct = async (req, res) => {
     // Delete the group item from the database
     const deletedProduct = await ProductItem.findByIdAndDelete(id);
     if (deletedProduct) {
-      res
-        .status(200)
-        .json({
-          message: "Product and associated image deleted successfully.",
-        });
+      res.status(200).json({
+        message: "Product and associated image deleted successfully.",
+      });
     } else {
       res.status(404).json({ message: "Product not found." });
     }
