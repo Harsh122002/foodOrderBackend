@@ -41,9 +41,6 @@ exports.getAllGroupItems = async (req, res) => {
   }
 };
 
-const GroupItem = require("../models/GroupItem"); // Adjust path as per your project structure
-const fs = require("fs"); // Node.js file system module for file operations
-
 exports.DeleteGroup = async (req, res) => {
   try {
     const { id } = req.params;

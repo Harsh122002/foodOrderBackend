@@ -19,7 +19,12 @@ const {
   DeleteGroup,
 } = require("../controllers/group");
 const authenticateJWT = require("../middleware/authMiddleware");
-const { addProductItem, getAllProduct } = require("../controllers/product");
+const {
+  addProductItem,
+  getAllProduct,
+  getProductsByGroup,
+  DeleteProduct,
+} = require("../controllers/product");
 const {
   OrderDetail,
   getAllOrder,
@@ -61,6 +66,8 @@ router.get("/all-running-orders", getAllRunningOrder);
 router.get("/all-declined-orders", getAllDeclinedOrder);
 router.get("/all-users", getAllUser);
 router.delete(`/deleteGroup/:id`, DeleteGroup);
-
+router.get(`/getProductsByGroup/:groupName`, getProductsByGroup);
 router.post("/update-order-status", updateOrderStatus);
+router.delete(`/deleteProduct/:id`, DeleteProduct);
+
 module.exports = router;
