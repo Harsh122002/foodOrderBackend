@@ -1,6 +1,7 @@
 const jwt = require("jsonwebtoken");
 const GroupItem = require("../models/groupModel");
 const upload = require("../middleware/multerConfig");
+const fs = require("fs"); // Node.js file system module for file operations
 
 exports.addGroupItem = (req, res) => {
   upload.single("imageFile")(req, res, async (err) => {
@@ -37,5 +38,39 @@ exports.getAllGroupItems = async (req, res) => {
     res.status(200).json(groupItems);
   } catch (error) {
     res.status(500).json({ error: error.message });
+  }
+};
+
+const GroupItem = require("../models/GroupItem"); // Adjust path as per your project structure
+const fs = require("fs"); // Node.js file system module for file operations
+
+exports.DeleteGroup = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log("Group ID to delete:", id);
+
+    // Fetch the group item to get the image file path
+    const groupItem = await GroupItem.findById(id);
+    if (!groupItem) {
+      return res.status(404).json({ message: "Group not found." });
+    }
+
+    // Delete the associated image file (if it exists)
+    if (groupItem.filePath) {
+      fs.unlinkSync(groupItem.filePath); // Delete the file synchronously
+    }
+
+    // Delete the group item from the database
+    const deletedGroup = await GroupItem.findByIdAndDelete(id);
+    if (deletedGroup) {
+      res
+        .status(200)
+        .json({ message: "Group and associated image deleted successfully." });
+    } else {
+      res.status(404).json({ message: "Group not found." });
+    }
+  } catch (error) {
+    console.error("Error deleting group:", error);
+    res.status(500).json({ message: "Failed to delete group." });
   }
 };

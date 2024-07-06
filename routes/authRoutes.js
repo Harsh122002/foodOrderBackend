@@ -11,8 +11,13 @@ const {
   getUserDetail,
   UpdateUserDetail,
   getUserCount,
+  getAllUser,
 } = require("../controllers/authController");
-const { addGroupItem, getAllGroupItems } = require("../controllers/group");
+const {
+  addGroupItem,
+  getAllGroupItems,
+  DeleteGroup,
+} = require("../controllers/group");
 const authenticateJWT = require("../middleware/authMiddleware");
 const { addProductItem, getAllProduct } = require("../controllers/product");
 const {
@@ -54,6 +59,8 @@ router.get("/all-pending-orders", getAllPendingOrder);
 router.get("/all-completed-orders", getAllCompleteOrder);
 router.get("/all-running-orders", getAllRunningOrder);
 router.get("/all-declined-orders", getAllDeclinedOrder);
+router.get("/all-users", getAllUser);
+router.delete(`/deleteGroup/:id`, DeleteGroup);
 
 router.post("/update-order-status", updateOrderStatus);
 module.exports = router;

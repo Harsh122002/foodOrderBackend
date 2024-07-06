@@ -292,3 +292,14 @@ exports.getUserCount = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch user count" });
   }
 };
+exports.getAllUser = async (req, res) => {
+  try {
+    const role = "user";
+    console.log("Fetching users with role:", role);
+    const users = await User.find({ role });
+    res.status(200).json({ users });
+  } catch (err) {
+    console.error("Error fetching users:", err);
+    res.status(500).json({ message: "Error fetching users" });
+  }
+};
