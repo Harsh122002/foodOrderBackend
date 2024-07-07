@@ -42,18 +42,27 @@ exports.OrderDelete = async (req, res) => {
   const { orderId } = req.body; // Assuming orderId is passed as a parameter
 
   try {
-    // Find the order by orderId and update its status to "Cancelled"
-    const updatedOrder = await Order.findByIdAndUpdate(orderId, {
-      status: "declined",
-    });
+    // Find the order by orderId
+    const order = await Order.findById(orderId);
 
-    if (!updatedOrder) {
+    if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
 
-    res
-      .status(200)
-      .json({ message: "Order cancelled successfully", order: updatedOrder });
+    // Update the order status to "declined"
+    order.status = "declined";
+    const updatedOrder = await order.save();
+
+    // Determine the payment mode and customize the message
+    let message = "Order cancelled successfully.";
+    if (order.paymentMode === "online") {
+      message += " You will receive a refund within 7 days.";
+    }
+
+    res.status(200).json({
+      message: message,
+      order: updatedOrder,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
