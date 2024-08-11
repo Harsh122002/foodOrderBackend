@@ -26,4 +26,4 @@ EXPOSE 5000
 ENV PORT=5000
 
 # Run the app
-CMD ["node", "server.js"]
+CMD ["node", "app.js"]

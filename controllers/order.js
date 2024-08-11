@@ -26,7 +26,9 @@ exports.getAllOrder = async (req, res) => {
       return res.status(400).json({ message: "User ID is required" });
     }
 
-    const orders = await Order.find({ userId });
+    // Fetch and sort orders in descending order based on 'orderDate'
+    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+
     if (!orders || orders.length === 0) {
       return res.status(404).json({ message: "Orders not found" });
     }
@@ -330,5 +332,20 @@ exports.getAllDeclinedOrder = async (req, res) => {
     res
       .status(500)
       .json({ error: "Failed to fetch pending orders with user details" });
+  }
+};
+
+exports.getAllPaymentAmount = async (req, res) => {
+  try {
+    // Aggregation pipeline to calculate the total amount
+    const [result] = await Order.aggregate([
+      { $group: { _id: null, totalAmount: { $sum: "$totalAmount" } } },
+    ]);
+
+    // Return only the total amount in the response
+    res.status(200).json(result ? result.totalAmount : 0);
+  } catch (error) {
+    console.error("Error calculating total payment amount:", error);
+    res.status(500).json({ error: "Failed to calculate total payment amount" });
   }
 };
