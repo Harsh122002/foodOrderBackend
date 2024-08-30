@@ -47,5 +47,22 @@ const resetPasswordOtp = (email, otp) => {
     }
   });
 };
+const sendOrderConfirmation = (email, status) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Order Status",
+    status: { status },
+    text: `Thank you for your order!\n\n`,
+  };
 
-module.exports = { sendOtpEmail, resetPasswordOtp };
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error("Error sending email:", error);
+    } else {
+      console.log("Order confirmation email sent:", info.response);
+    }
+  });
+};
+
+module.exports = { sendOtpEmail, resetPasswordOtp, sendOrderConfirmation };

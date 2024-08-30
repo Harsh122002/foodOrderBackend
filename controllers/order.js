@@ -5,6 +5,8 @@ exports.OrderDetail = async (req, res) => {
   const orderData = req.body;
   try {
     const order = new Order(orderData);
+    const user = await User.findById(order.userId);
+    sendOrderConfirmation(user.email, order.status);
     const savedOrder = await order.save();
 
     res.status(201).json({
@@ -157,6 +159,9 @@ exports.getAllPendingOrder = async (req, res) => {
 exports.updateOrderStatus = async (req, res) => {
   try {
     const { orderId, status } = req.body;
+    const order = await Order.findById(orderId);
+    const user = await User.findById(order.userId);
+    sendOrderConfirmation(user.email, status);
     const updatedOrder = await Order.findByIdAndUpdate(
       orderId,
       { status },
