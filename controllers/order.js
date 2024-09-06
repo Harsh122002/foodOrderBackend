@@ -1,5 +1,6 @@
 const Order = require("../models/orderModal");
 const User = require("../models/userModel"); // Replace with your User model import
+const { sendOrderConfirmation } = require("../utils/mailer");
 
 exports.OrderDetail = async (req, res) => {
   const orderData = req.body;

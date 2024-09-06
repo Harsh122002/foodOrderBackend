@@ -1,6 +1,5 @@
 const PDFDocument = require("pdfkit");
 const fs = require("fs");
-const path = require("path");
 
 async function GeneratePDF(orderData, outputPath, OrderId) {
   console.log(OrderId);
@@ -40,45 +39,65 @@ async function GeneratePDF(orderData, outputPath, OrderId) {
     doc.moveDown();
 
     // Table Header
-    // Table Header
+    const tableTop = doc.y;
+    const columnSpacing = 150;
+    const rowSpacing = 20;
+
+    // Header
     doc.font("Helvetica-Bold").fontSize(12);
-    doc.text("Product", 30, doc.y, { width: 200, continued: true });
-    doc.text("Quantity", 130, doc.y, { width: 100, continued: true });
-    doc.text("Price", 180, doc.y, { width: 100, continued: true });
-    doc.text("Total", 290, doc.y, { width: 100, continued: true });
+    doc.text("Product", 50, tableTop);
+    doc.text("Quantity", 200, tableTop);
+    doc.text("Price", 300, tableTop);
+    doc.text("Total", 400, tableTop);
     doc.moveDown();
 
     // Table Rows
+    let currentYPosition = tableTop + rowSpacing;
     orderData.products.forEach((product) => {
       doc.font("Helvetica").fontSize(12);
-      doc.text(product.name, 30, doc.y, { width: 200, continued: true });
-      doc.text(product.quantity.toString(), 130, doc.y, {
-        width: 100,
-        continued: true,
+
+      doc.text(product.name, 50, currentYPosition, { width: columnSpacing });
+      doc.text(product.quantity.toString(), 200, currentYPosition, {
+        width: columnSpacing,
+        align: "left",
       });
-      doc.text(`Rs. ${product.price}`, 180, doc.y, {
-        width: 100,
-        continued: true,
+      doc.text(`Rs. ${product.price.toFixed(2)}`, 300, currentYPosition, {
+        width: columnSpacing,
+        align: "left",
       });
-      doc.text(`Rs. ${product.price * product.quantity}`, 290, doc.y, {
-        width: 100,
-        continued: true,
-      });
-      doc.moveDown();
+      doc.text(
+        `Rs. ${(product.price * product.quantity).toFixed(2)}`,
+        400,
+        currentYPosition,
+        {
+          width: columnSpacing,
+          align: "left",
+        }
+      );
+
+      currentYPosition += rowSpacing; // Move to the next row position
     });
 
     // Total Amount
     doc
       .font("Helvetica-Bold")
       .fontSize(14)
-      .text(`Total Amount: Rs. ${orderData.totalAmount}`);
+      .text(
+        `Total Amount: Rs. ${orderData.totalAmount.toFixed(2)}`,
+        50,
+        currentYPosition + 20
+      );
     doc.moveDown();
 
     // Payment Method
     doc
       .font("Helvetica-Bold")
       .fontSize(14)
-      .text(`Payment Method: ${orderData.paymentMethod}`);
+      .text(
+        `Payment Method: ${orderData.paymentMethod}`,
+        50,
+        currentYPosition + 40
+      );
     doc.moveDown();
 
     // Finalize PDF and close the stream
