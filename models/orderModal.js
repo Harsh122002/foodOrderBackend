@@ -6,6 +6,9 @@ const orderSchema = new mongoose.Schema({
   name: { type: String, required: true },
   address: { type: String, required: true },
   mobileNumber: { type: String, required: true },
+  rating: { type: String, default: null },
+  ratingDescription: { type: String, default: null },
+
   products: [
     {
       name: { type: String, required: true },
@@ -17,7 +20,7 @@ const orderSchema = new mongoose.Schema({
   paymentMethod: { type: String, enum: ["cash", "online"], required: true },
   status: {
     type: String,
-    enum: ["pending", "running", "completed", "declined"],
+    enum: ["pending", "running", "completed", "declined", "return", "returned"], // list all valid statuses
     default: "pending",
   },
   createdAt: { type: Date, default: Date.now },

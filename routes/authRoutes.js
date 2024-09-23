@@ -37,6 +37,7 @@ const {
   getAllDeclinedOrder,
   getAllRunningOrder,
   getAllPaymentAmount,
+  updateRating,
 } = require("../controllers/order");
 const { GeneratePdf } = require("../controllers/generatePdf");
 const { Payment, PaymentVerify } = require("../controllers/payment");
@@ -71,4 +72,6 @@ router.get(`/getProductsByGroup/:groupName`, getProductsByGroup);
 router.post("/update-order-status", updateOrderStatus);
 router.delete(`/deleteProduct/:id`, DeleteProduct);
 router.get("/getTotalAmount", getAllPaymentAmount);
+router.post("/updateRating", updateRating);
+
 module.exports = router;

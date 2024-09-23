@@ -81,7 +81,7 @@ exports.getAllOrderStatuses = async (req, res) => {
       await Promise.all([
         Order.find({ status: "pending" }),
         Order.find({ status: "running" }),
-        Order.find({ status: "complete" }),
+        Order.find({ status: "completed" }),
         Order.find({ status: "declined" }),
       ]);
 
@@ -89,7 +89,7 @@ exports.getAllOrderStatuses = async (req, res) => {
     const orderStatuses = {
       pending: pendingOrders.length,
       running: runningOrders.length,
-      complete: completeOrders.length,
+      completed: completeOrders.length,
       declined: declinedOrders.length,
     };
 
@@ -177,7 +177,7 @@ exports.updateOrderStatus = async (req, res) => {
 exports.getAllCompleteOrder = async (req, res) => {
   try {
     // Find all completed orders
-    const completedOrders = await Order.find({ status: "complete" });
+    const completedOrders = await Order.find({ status: "completed" });
 
     // If no completed orders found, return an empty response
     if (!completedOrders || completedOrders.length === 0) {
@@ -353,5 +353,34 @@ exports.getAllPaymentAmount = async (req, res) => {
   } catch (error) {
     console.error("Error calculating total payment amount:", error);
     res.status(500).json({ error: "Failed to calculate total payment amount" });
+  }
+};
+
+exports.updateRating = async (req, res) => {
+  const { orderId, rating, description } = req.body; // Destructure from the request body
+
+  try {
+    // Find the order by its ID
+    const order = await Order.findById(orderId);
+
+    if (!order) {
+      // If no order was found, return an error response
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Update the rating and description
+    order.rating = rating;
+    order.ratingDescription = description;
+
+    order.status = "completed";
+
+    // Save the updated order
+    await order.save();
+
+    // Successfully updated
+    return res.status(200).json({ message: "Rating updated successfully" });
+  } catch (error) {
+    console.error("Error updating rating:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 };
