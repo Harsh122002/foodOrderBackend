@@ -4,10 +4,21 @@ const { sendOrderConfirmation } = require("../utils/mailer");
 
 exports.OrderDetail = async (req, res) => {
   const orderData = req.body;
+
+  // Validate address
+  if (!orderData.address) {
+    return res.status(400).json({
+      message: "Address is required. Please provide a valid address.",
+    });
+  }
+
   try {
     const order = new Order(orderData);
     const user = await User.findById(order.userId);
+
+    // Assuming sendOrderConfirmation is an email sending function
     sendOrderConfirmation(user.email, order.status);
+
     const savedOrder = await order.save();
 
     res.status(201).json({
@@ -22,6 +33,7 @@ exports.OrderDetail = async (req, res) => {
     });
   }
 };
+
 exports.getAllOrder = async (req, res) => {
   try {
     const { userId } = req.body;

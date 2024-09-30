@@ -52,8 +52,7 @@ const sendOrderConfirmation = (email, status) => {
     from: process.env.EMAIL_USER,
     to: email,
     subject: "Order Status",
-    status: { status },
-    text: `Thank you for your order!\n\n`,
+    text: `Thank you for your order!\n\nYour order is ${status}. Please check your order status after some time.`,
   };
 
   transporter.sendMail(mailOptions, (error, info) => {
