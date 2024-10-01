@@ -1,7 +1,7 @@
 const Order = require("../models/orderModal");
 const User = require("../models/userModel"); // Replace with your User model import
 const { sendOrderConfirmation } = require("../utils/mailer");
-
+const Product = require("../models/productModal");
 exports.OrderDetail = async (req, res) => {
   const orderData = req.body;
 
@@ -41,14 +41,39 @@ exports.getAllOrder = async (req, res) => {
       return res.status(400).json({ message: "User ID is required" });
     }
 
-    // Fetch and sort orders in descending order based on 'orderDate'
+    // Fetch and sort orders in descending order based on 'createdAt'
     const orders = await Order.find({ userId }).sort({ createdAt: -1 });
 
-    if (!orders || orders.length === 0) {
+    // Retrieve product details for each order
+    const ordersWithDetails = await Promise.all(
+      orders.map(async (order) => {
+        const productDetails = await Promise.all(
+          order.products.map(async (product) => {
+            const productInfo = await Product.findOne({
+              productName: product.name,
+            });
+
+            return {
+              name: product.name,
+              quantity: product.quantity,
+              price: product.price,
+              image: productInfo.filePath, // Assuming 'image' is a field in your Product model
+            };
+          })
+        );
+
+        return {
+          ...order._doc, // Spread the original order fields
+          products: productDetails, // Add the populated product details
+        };
+      })
+    );
+
+    if (!ordersWithDetails || ordersWithDetails.length === 0) {
       return res.status(404).json({ message: "Orders not found" });
     }
 
-    res.status(200).json(orders);
+    res.status(200).json(ordersWithDetails);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
