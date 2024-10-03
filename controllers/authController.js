@@ -3,6 +3,10 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sendOtpEmail } = require("../utils/mailer");
 const { resetPasswordOtp } = require("../utils/mailer");
+const passport = require("passport");
+const { default: axios } = require("axios");
+
+const GitHubStrategy = require("passport-github2").Strategy;
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
@@ -301,5 +305,97 @@ exports.getAllUser = async (req, res) => {
   } catch (err) {
     console.error("Error fetching users:", err);
     res.status(500).json({ message: "Error fetching users" });
+  }
+};
+const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
+const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
+
+exports.githubLogin = (req, res) => {
+  const redirectUri = `${process.env.REACT_APP_API_BASE_URL}/auth/github/callback`;
+  const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=user:email`;
+  res.redirect(githubAuthUrl);
+};
+
+exports.githubCallback = async (req, res) => {
+  try {
+    const { code } = req.query;
+
+    if (!code) {
+      return res.status(400).send("GitHub authorization code not found");
+    }
+
+    // Exchange the code for an access token
+    const tokenResponse = await axios.post(
+      `https://github.com/login/oauth/access_token`,
+      {
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code: code,
+      },
+      {
+        headers: { Accept: "application/json" },
+      }
+    );
+
+    const accessToken = tokenResponse.data.access_token;
+
+    // Fetch user information from GitHub
+    const userResponse = await axios.get(`https://api.github.com/user`, {
+      headers: { Authorization: `token ${accessToken}` },
+    });
+
+    // Get additional email if available
+    const emailResponse = await axios.get(
+      `https://api.github.com/user/emails`,
+      {
+        headers: { Authorization: `token ${accessToken}` },
+      }
+    );
+
+    // Get primary email or fallback to a placeholder
+    const primaryEmail = emailResponse.data.find(
+      (emailObj) => emailObj.primary
+    )?.email;
+
+    // Fallback for missing primary email
+    const email =
+      primaryEmail || userResponse.data.email || "noemail@github.com";
+
+    const name =
+      userResponse.data.name || userResponse.data.login || "GitHub User";
+
+    // Handle missing name or email from GitHub
+    if (!email) {
+      return res.status(400).send("GitHub account does not have a valid email");
+    }
+
+    // Check if user already exists in the database
+    let user = await User.findOne({ email });
+    if (!user) {
+      const password = "GitHubUser";
+      const hashedPassword = await bcrypt.hash(password, 10); // 10 is the salt rounds
+
+      user = new User({
+        name: name,
+        email: email,
+        password: hashedPassword, // Default password for GitHub users
+        // Mobile field is optional, so we don't have to worry about it
+      });
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    // Set JWT token in a cookie
+    res.cookie("token", token, { httpOnly: true });
+    res.redirect(
+      `http://localhost:3001/login?email=${user.email}&password=GitHubUser`
+    ); // Pass email and random password
+  } catch (error) {
+    console.error("Error during GitHub OAuth callback:", error);
+    res.status(500).send("An error occurred during the GitHub login process");
   }
 };

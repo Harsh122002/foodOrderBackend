@@ -12,6 +12,8 @@ const {
   UpdateUserDetail,
   getUserCount,
   getAllUser,
+  githubLogin,
+  githubCallback,
 } = require("../controllers/authController");
 const {
   addGroupItem,
@@ -73,5 +75,8 @@ router.post("/update-order-status", updateOrderStatus);
 router.delete(`/deleteProduct/:id`, DeleteProduct);
 router.get("/getTotalAmount", getAllPaymentAmount);
 router.post("/updateRating", updateRating);
+
+router.get("/auth/github", githubLogin);
+router.get("/auth/github/callback", githubCallback);
 
 module.exports = router;
