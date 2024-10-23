@@ -236,7 +236,7 @@ exports.getAllCompleteOrder = async (req, res) => {
 
       // Construct order object with user details
       const orderWithUser = {
-        orderId: order._id,
+        orderId: order.id,
         status: order.status,
         address: order.address,
         totalAmount: order.totalAmount, // Grand total of the order
