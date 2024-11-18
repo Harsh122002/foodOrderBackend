@@ -64,4 +64,27 @@ const sendOrderConfirmation = (email, status) => {
   });
 };
 
-module.exports = { sendOtpEmail, resetPasswordOtp, sendOrderConfirmation };
+const deleteOrderConfirmation = (email, status) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Order Cancellation Confirmation",
+    text: `Dear Customer,
+
+Thank you for your order. 
+
+We regret to inform you that your order status is now: "${status}". If applicable, any payment made will be refunded to your account within 7 business days. 
+
+`,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error("Error sending email:", error);
+    } else {
+      console.log("Order cancellation email sent successfully:", info.response);
+    }
+  });
+};
+
+module.exports = { sendOtpEmail, resetPasswordOtp, sendOrderConfirmation,deleteOrderConfirmation };

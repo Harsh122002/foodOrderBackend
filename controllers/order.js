@@ -1,6 +1,9 @@
 const Order = require("../models/orderModal");
 const User = require("../models/userModel"); // Replace with your User model import
-const { sendOrderConfirmation } = require("../utils/mailer");
+const {
+  sendOrderConfirmation,
+  deleteOrderConfirmation,
+} = require("../utils/mailer");
 const Product = require("../models/productModal");
 exports.OrderDetail = async (req, res) => {
   const orderData = req.body;
@@ -86,7 +89,7 @@ exports.OrderDelete = async (req, res) => {
   try {
     // Find the order by orderId
     const order = await Order.findById(orderId);
-
+    const user = await User.findById(order.userId);
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
@@ -94,6 +97,7 @@ exports.OrderDelete = async (req, res) => {
     // Update the order status to "declined"
     order.status = "declined";
     const updatedOrder = await order.save();
+    deleteOrderConfirmation(user.email,updatedOrder.status )
 
     // Determine the payment mode and customize the message
     let message = "Order cancelled successfully.";
