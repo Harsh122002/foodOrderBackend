@@ -13,26 +13,22 @@ const generateOtp = () =>
 exports.register = async (req, res) => {
   const { name, email, password, mobile } = req.body;
 
-  // Regular expressions for validation
   const nameRegex = /^[A-Za-z]+$/;
   const mobileRegex = /^\d{10}$/;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // Validate name
   if (!nameRegex.test(name)) {
     return res
       .status(400)
       .json({ msg: "Name must contain only alphabetic characters" });
   }
 
-  // Validate mobile
   if (!mobileRegex.test(mobile)) {
     return res
       .status(400)
       .json({ msg: "Mobile number must be exactly 10 digits" });
   }
 
-  // Validate email
   if (!emailRegex.test(email)) {
     return res.status(400).json({ msg: "Invalid email format" });
   }
@@ -49,7 +45,7 @@ exports.register = async (req, res) => {
       password,
       mobile,
       otp: generateOtp(),
-      otpExpires: Date.now() + 10 * 60 * 1000, // 10 minutes
+      otpExpires: Date.now() + 10 * 60 * 1000,
     });
 
     const salt = await bcrypt.genSalt(10);
@@ -80,7 +76,6 @@ exports.login = async (req, res) => {
     if (!emailRegex.test(email)) {
       return res.status(400).json({ msg: "Invalid email format" });
     }
-    // Check if the password is correct
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid password" });
@@ -134,7 +129,6 @@ exports.verifyOtp = async (req, res) => {
       (err, token) => {
         if (err) throw err;
         res.json({ token });
-        // res.redirect(`http://localhost:3000/login`);
       }
     );
   } catch (err) {
@@ -144,9 +138,7 @@ exports.verifyOtp = async (req, res) => {
 };
 
 exports.requestPasswordReset = async (req, res) => {
-  console.log("Request body:", req.body);
   const { email } = req.body;
-  console.log("Extracted email:", email);
 
   if (!email) {
     return res.status(400).json({ message: "Email is required" });
@@ -158,15 +150,13 @@ exports.requestPasswordReset = async (req, res) => {
       return res.status(404).json({ message: "User does not exist" });
     }
 
-    // Generate OTP
-    const otp = generateOtp(); // 6-digit OTP
+    const otp = generateOtp();
 
     user.otp = otp;
-    user.otpExpires = Date.now() + 600000; // 10 minutes from now
+    user.otpExpires = Date.now() + 600000;
     resetPasswordOtp(user.email, user.otp);
     await user.save();
 
-    // Send OTP email
     resetPasswordOtp(user.email, user.otp);
 
     res.json({ message: "OTP sent to email successfully" });
@@ -184,16 +174,13 @@ exports.verifyOtpAndUpdatePassword = async (req, res) => {
       return res.status(404).json({ message: "User does not exist" });
     }
 
-    // Check if OTP is valid
     if (user.otp !== otp || user.otpExpires < Date.now()) {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
-    // Hash the new password
     const salt = await bcrypt.genSalt(10);
     user.password = await bcrypt.hash(newPassword, salt);
 
-    // Clear OTP and expiration
     user.otp = undefined;
     user.otpExpires = undefined;
 
@@ -213,12 +200,10 @@ exports.adminLogin = async (req, res) => {
       return res.status(404).json({ message: "User does not exist" });
     }
 
-    // Check if the user is an admin
     if (user.role === "user") {
       return res.status(403).json({ message: "You are the owner" });
     }
 
-    // Check if the password is correct
     const isPasswordValid = await bcrypt.compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid password" });
@@ -246,13 +231,11 @@ exports.getUserDetail = async (req, res) => {
   try {
     const { userId } = req.body;
 
-    // Fetch user details from the database
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Send user details as JSON response
     res.json(user);
   } catch (error) {
     console.error(error);
@@ -263,33 +246,28 @@ exports.UpdateUserDetail = async (req, res) => {
   try {
     const { email, name, mobile, address } = req.body;
 
-    // Find the user by email
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Update user details
     user.name = name;
     user.mobile = mobile;
     user.address = address;
     user.update = new Date();
 
-    // Save changes to the database
     await user.save();
 
-    // Send updated user details in response
     res.status(200).json(user);
   } catch (error) {
     console.error("Error updating user details:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 };
-// controllers/userController.js
 exports.getUserCount = async (req, res) => {
   try {
     const role = "user";
-    const userCount = await User.countDocuments({ role }); // Corrected query syntax
+    const userCount = await User.countDocuments({ role });
     res.status(200).json({ userCount });
   } catch (err) {
     console.error("Error fetching user count:", err);
@@ -299,7 +277,6 @@ exports.getUserCount = async (req, res) => {
 exports.getAllUser = async (req, res) => {
   try {
     const role = "user";
-    console.log("Fetching users with role:", role);
     const users = await User.find({ role });
     res.status(200).json({ users });
   } catch (err) {
@@ -324,7 +301,6 @@ exports.githubCallback = async (req, res) => {
       return res.status(400).send("GitHub authorization code not found");
     }
 
-    // Exchange the code for an access token
     const tokenResponse = await axios.post(
       `https://github.com/login/oauth/access_token`,
       {
@@ -339,12 +315,10 @@ exports.githubCallback = async (req, res) => {
 
     const accessToken = tokenResponse.data.access_token;
 
-    // Fetch user information from GitHub
     const userResponse = await axios.get(`https://api.github.com/user`, {
       headers: { Authorization: `token ${accessToken}` },
     });
 
-    // Get additional email if available
     const emailResponse = await axios.get(
       `https://api.github.com/user/emails`,
       {
@@ -352,48 +326,41 @@ exports.githubCallback = async (req, res) => {
       }
     );
 
-    // Get primary email or fallback to a placeholder
     const primaryEmail = emailResponse.data.find(
       (emailObj) => emailObj.primary
     )?.email;
 
-    // Fallback for missing primary email
     const email =
       primaryEmail || userResponse.data.email || "noemail@github.com";
 
     const name =
       userResponse.data.name || userResponse.data.login || "GitHub User";
 
-    // Handle missing name or email from GitHub
     if (!email) {
       return res.status(400).send("GitHub account does not have a valid email");
     }
 
-    // Check if user already exists in the database
     let user = await User.findOne({ email });
     if (!user) {
       const password = "GitHubUser";
-      const hashedPassword = await bcrypt.hash(password, 10); // 10 is the salt rounds
+      const hashedPassword = await bcrypt.hash(password, 10);
 
       user = new User({
         name: name,
         email: email,
-        password: hashedPassword, // Default password for GitHub users
-        // Mobile field is optional, so we don't have to worry about it
+        password: hashedPassword,
       });
       await user.save();
     }
 
-    // Generate JWT token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
-    // Set JWT token in a cookie
     res.cookie("token", token, { httpOnly: true });
     res.redirect(
       `http://localhost:3001/login?email=${user.email}&password=GitHubUser`
-    ); // Pass email and random password
+    );
   } catch (error) {
     console.error("Error during GitHub OAuth callback:", error);
     res.status(500).send("An error occurred during the GitHub login process");

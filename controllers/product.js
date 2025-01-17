@@ -1,11 +1,10 @@
 const jwt = require("jsonwebtoken");
-const ProductItem = require("../models/productModal"); // Assuming this is your Mongoose model for ProductItem
-const upload = require("../middleware/multerConfig"); // Assuming multer middleware for file uploads
+const ProductItem = require("../models/productModal");
+const upload = require("../middleware/multerConfig");
 const GroupItem = require("../models/groupModel");
-const fs = require("fs"); // Node.js file system module for file operations
+const fs = require("fs");
 
 exports.addProductItem = (req, res) => {
-  // Middleware function to handle file upload
   upload.single("imageFile")(req, res, async (err) => {
     if (err) {
       return res.status(500).json({ error: err.message });
@@ -24,7 +23,6 @@ exports.addProductItem = (req, res) => {
         return res.status(404).json({ error: "Group not found" });
       }
 
-      // Create a new ProductItem instance using the Mongoose model
       const newProductItem = new ProductItem({
         productName,
         price,
@@ -32,15 +30,12 @@ exports.addProductItem = (req, res) => {
         filePath,
       });
 
-      // Save the new product item to the database
       await newProductItem.save();
 
-      // Return success response with the new product item data
       res
         .status(201)
         .json({ message: "Product item added successfully", newProductItem });
     } catch (error) {
-      // Handle any errors that occur during the process
       res.status(500).json({ error: error.message });
     }
   });
@@ -48,12 +43,23 @@ exports.addProductItem = (req, res) => {
 
 exports.getAllProduct = async (req, res) => {
   try {
-    const AllProduct = await ProductItem.find();
-    res.status(200).json(AllProduct);
+    const products = await ProductItem.find();
+    const allProductsWithGroups = await Promise.all(
+      products.map(async (product) => {
+        const group = await GroupItem.findOne({ _id: product.groupName });
+        return {
+          ...product._doc,
+          groupDetails: group || null,
+        };
+      })
+    );
+    res.status(200).json(allProductsWithGroups);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
+
 exports.getProductsByGroup = async (req, res) => {
   try {
     const { groupName } = req.params;
@@ -66,23 +72,21 @@ exports.getProductsByGroup = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 exports.DeleteProduct = async (req, res) => {
   try {
     const { id } = req.params;
     console.log("Group ID to delete:", id);
 
-    // Fetch the group item to get the image file path
     const productItem = await ProductItem.findById(id);
     if (!productItem) {
       return res.status(404).json({ message: "Group not found." });
     }
 
-    // Delete the associated image file (if it exists)
     if (productItem.filePath) {
-      fs.unlinkSync(productItem.filePath); // Delete the file synchronously
+      fs.unlinkSync(productItem.filePath);
     }
 
-    // Delete the group item from the database
     const deletedProduct = await ProductItem.findByIdAndDelete(id);
     if (deletedProduct) {
       res.status(200).json({
@@ -95,4 +99,59 @@ exports.DeleteProduct = async (req, res) => {
     console.error("Error deleting Product:", error);
     res.status(500).json({ message: "Failed to delete Product." });
   }
+};
+exports.UpdateProductItem = async (req, res) => {
+  try {
+    const { productId } = req.body;
+
+    const productItem = await ProductItem.findOne({ _id: productId });
+
+    if (!productItem) {
+      return res.status(404).json({ message: "Group item not found" });
+    }
+    res.status(200).json({
+      productName: productItem.productName,
+      filePath: productItem.filePath,
+      price: productItem.price,
+      groupName: productItem.groupName,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+exports.addUpdateProductItem = (req, res) => {
+  upload.single("imageFile")(req, res, async (err) => {
+    if (err) {
+      return res
+        .status(500)
+        .json({ error: "Failed to upload image. Please try again." });
+    }
+
+    try {
+      const { productId, productName, price, groupName } = req.body;
+      const imageFile = req.file ? req.file.filename : null;
+      const product = await ProductItem.findById({ _id: productId });
+      if (!product) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      product.productName = productName || product.productName;
+      product.price = price || product.price;
+      product.groupName = groupName || product.groupName;
+
+      if (imageFile) {
+        product.imageFile = imageFile;
+      }
+
+      await product.save();
+
+      res
+        .status(200)
+        .json({ status: true, message: "Product updated successfully" });
+    } catch (error) {
+      res
+        .status(500)
+        .json({ error: "Failed to update product. Please try again." });
+    }
+  });
 };

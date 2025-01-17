@@ -1,7 +1,7 @@
 const jwt = require("jsonwebtoken");
 const GroupItem = require("../models/groupModel");
 const upload = require("../middleware/multerConfig");
-const fs = require("fs"); // Node.js file system module for file operations
+const fs = require("fs");
 
 exports.addGroupItem = (req, res) => {
   upload.single("imageFile")(req, res, async (err) => {
@@ -16,7 +16,6 @@ exports.addGroupItem = (req, res) => {
 
       const { groupName } = req.body;
       const filePath = req.file.path;
-      console.log("file", req.file); // Log the file information for debugging
 
       const newGroupItem = new GroupItem({
         groupName,
@@ -32,6 +31,7 @@ exports.addGroupItem = (req, res) => {
     }
   });
 };
+
 exports.getAllGroupItems = async (req, res) => {
   try {
     const groupItems = await GroupItem.find();
@@ -44,20 +44,16 @@ exports.getAllGroupItems = async (req, res) => {
 exports.DeleteGroup = async (req, res) => {
   try {
     const { id } = req.params;
-    console.log("Group ID to delete:", id);
 
-    // Fetch the group item to get the image file path
     const groupItem = await GroupItem.findById(id);
     if (!groupItem) {
       return res.status(404).json({ message: "Group not found." });
     }
 
-    // Delete the associated image file (if it exists)
     if (groupItem.filePath) {
-      fs.unlinkSync(groupItem.filePath); // Delete the file synchronously
+      fs.unlinkSync(groupItem.filePath);
     }
 
-    // Delete the group item from the database
     const deletedGroup = await GroupItem.findByIdAndDelete(id);
     if (deletedGroup) {
       res
@@ -67,7 +63,50 @@ exports.DeleteGroup = async (req, res) => {
       res.status(404).json({ message: "Group not found." });
     }
   } catch (error) {
-    console.error("Error deleting group:", error);
     res.status(500).json({ message: "Failed to delete group." });
   }
+};
+
+exports.UpdateGroupItem = async (req, res) => {
+  try {
+    const { groupId } = req.body;
+
+    const groupItem = await GroupItem.findOne({ _id: groupId });
+    
+    if (!groupItem) {
+      return res.status(404).json({ message: "Group item not found" });
+    }
+    res.status(200).json({ groupName: groupItem.groupName, filePath: groupItem.filePath });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.addUpdateGroupItem = (req, res) => {
+  upload.single("imageFile")(req, res, async (err) => {
+    if (err) {
+      return res.status(500).json({ error: "Failed to upload image. Please try again." });
+    }
+
+    try {
+      const { groupId, groupName } = req.body;
+      const imageFile = req.file ? req.file.filename : null;
+
+      const groupItem = await GroupItem.findById({ _id: groupId });
+      if (!groupItem) {
+        return res.status(404).json({ error: "Group not found" });
+      }
+
+      groupItem.groupName = groupName || groupItem.groupName;
+      if (imageFile) {
+        groupItem.imageFile = imageFile;
+      }
+
+      await groupItem.save();
+
+      res.status(200).json({ status: true, message: "Group updated successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update group. Please try again." });
+    }
+  });
 };

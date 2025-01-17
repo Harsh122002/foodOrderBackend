@@ -19,6 +19,8 @@ const {
   addGroupItem,
   getAllGroupItems,
   DeleteGroup,
+  UpdateGroupItem,
+  addUpdateGroupItem,
 } = require("../controllers/group");
 const authenticateJWT = require("../middleware/authMiddleware");
 const {
@@ -26,6 +28,8 @@ const {
   getAllProduct,
   getProductsByGroup,
   DeleteProduct,
+  UpdateProductItem,
+  addUpdateProductItem,
 } = require("../controllers/product");
 const {
   OrderDetail,
@@ -75,6 +79,10 @@ router.post("/update-order-status", updateOrderStatus);
 router.delete(`/deleteProduct/:id`, DeleteProduct);
 router.get("/getTotalAmount", getAllPaymentAmount);
 router.post("/updateRating", updateRating);
+router.post("/updateGroup", UpdateGroupItem);
+router.post("/update-Group", addUpdateGroupItem);
+router.post("/updateProduct", UpdateProductItem);
+router.post("/update-Proudct", addUpdateProductItem);
 
 router.get("/auth/github", githubLogin);
 router.get("/auth/github/callback", githubCallback);
