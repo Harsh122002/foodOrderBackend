@@ -5,6 +5,7 @@ const {
   deleteOrderConfirmation,
 } = require("../utils/mailer");
 const Product = require("../models/productModal");
+const moment = require('moment'); // Install moment.js for date manipulation
 
 exports.OrderDetail = async (req, res) => {
   const orderData = req.body;
@@ -419,5 +420,59 @@ exports.updateRating = async (req, res) => {
   } catch (error) {
     console.error("Error updating rating:", error);
     return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+exports.getMonthlyCompleteOrder = async (req, res) => {
+  try {
+    const completedOrders = await Order.find({ status: "completed" });
+    const declinedOrders = await Order.find({ status: "declined" });
+
+    if ((!completedOrders || completedOrders.length === 0) && (!declinedOrders || declinedOrders.length === 0)) {
+      return res.status(404).json({ message: "No completed or declined orders found" });
+    }
+
+    // Initialize an empty object to store data by month
+    const monthlyData = {};
+
+    // Helper function to process orders
+    const processOrders = (orders, status) => {
+      for (let order of orders) {
+        const orderMonth = moment(order.createdAt).format("YYYY-MM"); // Get month in YYYY-MM format
+
+        // Check if the month already exists in the monthlyData object
+        if (!monthlyData[orderMonth]) {
+          monthlyData[orderMonth] = {
+            completedOrders: 0,
+            declinedOrders: 0,
+          };
+        }
+
+        if (status === "completed") {
+          monthlyData[orderMonth].completedOrders += 1;
+        } else if (status === "declined") {
+          monthlyData[orderMonth].declinedOrders += 1;
+        }
+      }
+    };
+
+    // Process completed and declined orders
+    processOrders(completedOrders, "completed");
+    processOrders(declinedOrders, "declined");
+
+    // Prepare data for the chart (format it as an array of months and values)
+    const chartData = Object.keys(monthlyData).map((month) => ({
+      month,
+      completedOrders: monthlyData[month].completedOrders,
+      declinedOrders: monthlyData[month].declinedOrders,
+    }));
+
+    res.status(200).json({data: chartData });
+  } catch (error) {
+    console.error("Error fetching completed and declined orders monthly data:", error);
+    res.status(500).json({
+      error: "Failed to fetch completed and declined orders monthly data",
+    });
   }
 };

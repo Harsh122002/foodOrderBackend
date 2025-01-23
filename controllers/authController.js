@@ -13,15 +13,14 @@ const generateOtp = () =>
 exports.register = async (req, res) => {
   const { name, email, password, mobile } = req.body;
 
-  const nameRegex = /^[A-Za-z]+$/;
   const mobileRegex = /^\d{10}$/;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  if (!nameRegex.test(name)) {
-    return res
-      .status(400)
-      .json({ msg: "Name must contain only alphabetic characters" });
-  }
+  // if (!nameRegex.test(name.trim())) {
+  //   return res
+  //     .status(400)
+  //     .json({ msg: "Name must contain only alphabetic characters" });
+  // }
 
   if (!mobileRegex.test(mobile)) {
     return res
@@ -210,6 +209,8 @@ exports.adminLogin = async (req, res) => {
     }
 
     const payload = { user: { id: user.id } };
+    const userId = user._id;
+
     jwt.sign(
       payload,
       process.env.JWT_SECRET,
@@ -219,6 +220,7 @@ exports.adminLogin = async (req, res) => {
         res.json({
           message: "Login successful",
           token,
+          userId,
         });
       }
     );
@@ -231,7 +233,7 @@ exports.getUserDetail = async (req, res) => {
   try {
     const { userId } = req.body;
 
-    const user = await User.findById(userId);
+    const user = await User.findById({ _id: userId });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -364,5 +366,103 @@ exports.githubCallback = async (req, res) => {
   } catch (error) {
     console.error("Error during GitHub OAuth callback:", error);
     res.status(500).send("An error occurred during the GitHub login process");
+  }
+};
+
+exports.UserUpdate = async (req, res) => {
+  try {
+    const { id } = req.params;
+    console.log(id);
+
+    const { name, email, mobile, address, role } = req.body;
+    const updatedUser = await User.findByIdAndUpdate(
+      id,
+      {
+        $set: {
+          name,
+          email,
+          mobile,
+          address,
+          role,
+          update: new Date(),
+        },
+      },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({
+      message: "User updated successfully",
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error(error);
+    res
+      .status(500)
+      .json({ message: "Error updating user", error: error.message });
+  }
+};
+
+exports.DeleteUser = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const deletedUser = await User.findByIdAndDelete(id);
+
+    if (!deletedUser) {
+      return res.status(404).json({
+        message: "User not found",
+      });
+    }
+
+    res.status(200).json({
+      message: "User deleted successfully",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Error deleting user",
+      error: error.message,
+    });
+  }
+};
+exports.GoogleRegister = async (req, res) => {
+  const { name, email } = req.body;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // if (!nameRegex.test(name.trim())) {
+  //   return res
+  //     .status(400)
+  //     .json({ msg: "Name must contain only alphabetic characters" });
+  // }
+
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ msg: "Invalid email format" });
+  }
+
+  try {
+    let user = await User.findOne({ email });
+    if (!user) {
+      const password = "GoogleUser";
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      user = new User({
+        name: name,
+        email: email,
+        password: hashedPassword,
+      });
+      await user.save();
+    }
+
+    res.status(200).json({
+      message: "Registration successful",
+      data:user.email
+    });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send("Server error");
   }
 };

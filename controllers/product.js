@@ -15,7 +15,7 @@ exports.addProductItem = (req, res) => {
         return res.status(400).json({ error: "No file uploaded" });
       }
 
-      const { productName, price, groupName } = req.body;
+      const { productName, price, groupName, description } = req.body;
       const filePath = req.file.path;
       console.log(req.body);
       const existingGroup = await GroupItem.findById(groupName);
@@ -28,6 +28,7 @@ exports.addProductItem = (req, res) => {
         price,
         groupName,
         filePath,
+        description,
       });
 
       await newProductItem.save();
@@ -58,7 +59,6 @@ exports.getAllProduct = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 exports.getProductsByGroup = async (req, res) => {
   try {
@@ -114,6 +114,7 @@ exports.UpdateProductItem = async (req, res) => {
       filePath: productItem.filePath,
       price: productItem.price,
       groupName: productItem.groupName,
+      description: productItem.description,
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -128,7 +129,7 @@ exports.addUpdateProductItem = (req, res) => {
     }
 
     try {
-      const { productId, productName, price, groupName } = req.body;
+      const { productId, productName, price, groupName, description } = req.body;
       const imageFile = req.file ? req.file.filename : null;
       const product = await ProductItem.findById({ _id: productId });
       if (!product) {
@@ -138,7 +139,7 @@ exports.addUpdateProductItem = (req, res) => {
       product.productName = productName || product.productName;
       product.price = price || product.price;
       product.groupName = groupName || product.groupName;
-
+      product.description = description || product.description
       if (imageFile) {
         product.imageFile = imageFile;
       }

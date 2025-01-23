@@ -8,12 +8,16 @@ const {
   verifyOtpAndUpdatePassword,
   adminLogin,
   verifyToken,
-  getUserDetail,
-  UpdateUserDetail,
+  gauthenticateJWT,UpdateUser,
   getUserCount,
   getAllUser,
   githubLogin,
   githubCallback,
+  DeleteUser,
+  UserUpdate,
+  getUserDetail,
+  UpdateUserDetail,
+  GoogleRegister,
 } = require("../controllers/authController");
 const {
   addGroupItem,
@@ -44,11 +48,13 @@ const {
   getAllRunningOrder,
   getAllPaymentAmount,
   updateRating,
+  getMonthlyCompleteOrder,
 } = require("../controllers/order");
 const { GeneratePdf } = require("../controllers/generatePdf");
 const { Payment, PaymentVerify } = require("../controllers/payment");
 
 router.post("/register", register);
+router.post("/googleRegister", GoogleRegister);
 router.post("/verify-otp", verifyOtp);
 router.post("/login", login);
 router.post("/request-password-reset", requestPasswordReset);
@@ -83,7 +89,9 @@ router.post("/updateGroup", UpdateGroupItem);
 router.post("/update-Group", addUpdateGroupItem);
 router.post("/updateProduct", UpdateProductItem);
 router.post("/update-Proudct", addUpdateProductItem);
-
+router.put("/update-user/:id",UserUpdate)
+router.delete("/delete-user/:id", DeleteUser);
+router.get("/getMonthlyComplete",getMonthlyCompleteOrder)
 router.get("/auth/github", githubLogin);
 router.get("/auth/github/callback", githubCallback);
 

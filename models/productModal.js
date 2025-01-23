@@ -9,6 +9,7 @@ const ProductSchema = new mongoose.Schema({
     required: true,
   }, // Assuming `GroupItem` is the model name for group references
   filePath: { type: String, required: true },
+  description: { type: String, require: false },
   timeAdded: { type: Date, default: Date.now },
 });
 
