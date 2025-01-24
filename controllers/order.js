@@ -172,6 +172,7 @@ exports.getAllPendingOrder = async (req, res) => {
           address: order.address,
           totalAmount: order.totalAmount,
           paymentMethod: order.paymentMethod,
+          added:order.createdAt,
           products: productsWithFilePath,
           user: {
             username: user.name,
@@ -249,6 +250,7 @@ exports.getAllCompleteOrder = async (req, res) => {
         address: order.address,
         totalAmount: order.totalAmount,
         products: productsWithImages,
+        added:order.createdAt,
         paymentMethod: order.paymentMethod,
         user: {
           username: user.name,
@@ -308,6 +310,7 @@ exports.getAllRunningOrder = async (req, res) => {
         address: order.address,
         totalAmount: order.totalAmount,
         products: productsWithImages,
+        added:order.createdAt,
         paymentMethod: order.paymentMethod,
         user: {
           username: user.name,
@@ -367,6 +370,7 @@ exports.getAllDeclinedOrder = async (req, res) => {
         address: order.address,
         totalAmount: order.totalAmount,
         products: productsWithImages,
+        added:order.createdAt,
         paymentMethod: order.paymentMethod,
         user: {
           username: user.name,
@@ -473,6 +477,53 @@ exports.getMonthlyCompleteOrder = async (req, res) => {
     console.error("Error fetching completed and declined orders monthly data:", error);
     res.status(500).json({
       error: "Failed to fetch completed and declined orders monthly data",
+    });
+  }
+};
+exports.getMonthlyOrderAmounts = async (req, res) => {
+  try {
+    const completedOrders = await Order.find({ status: "completed" });
+    const declinedOrders = await Order.find({ status: "declined" });
+
+    if ((!completedOrders || completedOrders.length === 0) && (!declinedOrders || declinedOrders.length === 0)) {
+      return res.status(404).json({ message: "No completed or declined orders found" });
+    }
+
+    const monthlyData = {};
+
+    const processOrders = (orders, status) => {
+      for (let order of orders) {
+        const orderMonth = moment(order.createdAt).format("YYYY-MM");
+
+        if (!monthlyData[orderMonth]) {
+          monthlyData[orderMonth] = {
+            completedOrderAmount: 0,
+            declinedOrderAmount: 0,
+          };
+        }
+
+        if (status === "completed") {
+          monthlyData[orderMonth].completedOrderAmount += order.totalAmount;
+        } else if (status === "declined") {
+          monthlyData[orderMonth].declinedOrderAmount += order.totalAmount;
+        }
+      }
+    };
+
+    processOrders(completedOrders, "completed");
+    processOrders(declinedOrders, "declined");
+
+    const chartData = Object.keys(monthlyData).map((month) => ({
+      month,
+      completedOrderAmount: monthlyData[month].completedOrderAmount,
+      declinedOrderAmount: monthlyData[month].declinedOrderAmount,
+    }));
+
+    res.status(200).json({ data: chartData });
+  } catch (error) {
+    console.error("Error fetching completed and declined orders monthly amounts:", error);
+    res.status(500).json({
+      error: "Failed to fetch completed and declined orders monthly amounts",
     });
   }
 };

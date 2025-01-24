@@ -3,6 +3,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const { sendOtpEmail } = require("../utils/mailer");
 const { resetPasswordOtp } = require("../utils/mailer");
+const { sendDeliveryBoysInformation } = require("../utils/mailer");
+
 const passport = require("passport");
 const { default: axios } = require("axios");
 
@@ -15,12 +17,6 @@ exports.register = async (req, res) => {
 
   const mobileRegex = /^\d{10}$/;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-  // if (!nameRegex.test(name.trim())) {
-  //   return res
-  //     .status(400)
-  //     .json({ msg: "Name must contain only alphabetic characters" });
-  // }
 
   if (!mobileRegex.test(mobile)) {
     return res
@@ -278,7 +274,7 @@ exports.getUserCount = async (req, res) => {
 };
 exports.getAllUser = async (req, res) => {
   try {
-    const role = "user";
+    const role = { $in: ["user", "delivery"] };
     const users = await User.find({ role });
     res.status(200).json({ users });
   } catch (err) {
@@ -433,12 +429,6 @@ exports.GoogleRegister = async (req, res) => {
   const { name, email } = req.body;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  // if (!nameRegex.test(name.trim())) {
-  //   return res
-  //     .status(400)
-  //     .json({ msg: "Name must contain only alphabetic characters" });
-  // }
-
   if (!emailRegex.test(email)) {
     return res.status(400).json({ msg: "Invalid email format" });
   }
@@ -459,10 +449,58 @@ exports.GoogleRegister = async (req, res) => {
 
     res.status(200).json({
       message: "Registration successful",
-      data:user.email
+      data: user.email,
     });
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error");
+  }
+};
+
+exports.DeliveryBoyRegister = async (req, res) => {
+  try {
+    const { name, email, phone, password, address } = req.body;
+
+    const mobileRegex = /^\d{10}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!mobileRegex.test(phone)) {
+      return res
+        .status(400)
+        .json({ message: "Mobile number must be exactly 10 digits" });
+    }
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    let user = await User.findOne({ email });
+    if (user) {
+      return res.status(409).json({ message: "User already exists" });
+    }
+    sendDeliveryBoysInformation(email, password);
+
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    const role = "delivery";
+
+    user = new User({
+      name,
+      email,
+      mobile:phone,
+      password: hashedPassword,
+      address,
+      role,
+    });
+
+    await user.save();
+
+    res.status(201).json({
+      message: "Delivery Boy registered successfully",
+    });
+  } catch (error) {
+    console.error("Error during registration:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 };

@@ -63,6 +63,22 @@ const sendOrderConfirmation = (email, status) => {
     }
   });
 };
+const sendDeliveryBoysInformation = (email, password) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "Login UserName and Password",
+    text: `your username=${email}\n password=${password}`,
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.error("Error sending email:", error);
+    } else {
+      console.log("Order confirmation email sent:", info.response);
+    }
+  });
+};
 
 const deleteOrderConfirmation = (email, status) => {
   const mailOptions = {
@@ -87,4 +103,4 @@ We regret to inform you that your order status is now: "${status}". If applicabl
   });
 };
 
-module.exports = { sendOtpEmail, resetPasswordOtp, sendOrderConfirmation,deleteOrderConfirmation };
+module.exports = { sendOtpEmail, resetPasswordOtp, sendOrderConfirmation,deleteOrderConfirmation,sendDeliveryBoysInformation };
