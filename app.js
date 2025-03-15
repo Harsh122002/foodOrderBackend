@@ -1,45 +1,32 @@
-const cluster = require("cluster");
-const express = require("express");
-const connectDB = require("./config/db");
-const bodyParser = require("body-parser");
-const authRoutes = require("./routes/authRoutes");
-require("dotenv").config();
-const cors = require("cors");
+import express, { static as s } from "express";
+import connectDB from "./config/db.js"
+import authRoutes from "./routes/authRoutes.js";
+import dotenv from "dotenv";
+dotenv.config();
+import cors from "cors";
+import cluster from "cluster";
 
-const numCPUs = require("os").cpus().length;
+const { isMaster, fork } = cluster;
+import { cpus } from "os";
+const numCPUs = cpus().length;
 
-if (cluster.isMaster) {
+if (isMaster) {
   console.log(`Master process ${process.pid} is running`);
-
-  // Fork worker processes
   for (let i = 0; i < numCPUs; i++) {
-    cluster.fork();
+    fork();
   }
-
-  cluster.on("exit", (worker, code, signal) => {
+  cluster.on("exit", (worker) => {
     console.log(`Worker ${worker.process.pid} died`);
-    cluster.fork();
+    fork();
   });
 } else {
   const app = express();
-
-  // Connect to database
   connectDB();
-
-  // Middleware
   app.use(express.json());
-  app.use(bodyParser.json());
-  app.use(bodyParser.urlencoded({ extended: false }));
+  app.use(express.urlencoded({ extended: true }));
   app.use(cors());
-  app.use("/groups", express.static("groups"));
-
-  // Log environment variables to ensure they are being read correctly
-
-  // Razorpay instance
-
-  // Routes
+  app.use("/groups", s("groups"));
   app.use("/api/auth", authRoutes);
-
   const PORT = process.env.PORT || 5000;
   app.listen(PORT, () => {
     console.log(`Worker ${process.pid} running on port ${PORT}`);

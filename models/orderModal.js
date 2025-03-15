@@ -1,8 +1,8 @@
 // models/Order.js
-const mongoose = require("mongoose");
+import { Schema, model } from "mongoose";
 
-const orderSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+const orderSchema = new Schema({
+  userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   name: { type: String, required: true },
   address: { type: String, required: true },
   mobileNumber: { type: String, required: true },
@@ -23,7 +23,14 @@ const orderSchema = new mongoose.Schema({
     enum: ["pending", "running", "completed", "declined", "return", "returned"], // list all valid statuses
     default: "pending",
   },
+  discountName:{ type: String},
+  discountPercentage: { type: Number },
+  deliveryCharge: { type: Number },
+  couponCode: { type: String },
+  couponDiscount: { type: Number },
+  orderNote: { type: String },
+  orderRef: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.model("Order", orderSchema);
+export default model("Order", orderSchema);

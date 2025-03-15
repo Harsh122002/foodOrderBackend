@@ -1,10 +1,9 @@
-const jwt = require("jsonwebtoken");
-const GroupItem = require("../models/groupModel");
-const upload = require("../middleware/multerConfig");
-const fs = require("fs");
+import GroupItem from "../models/groupModel.js";
+import single  from "../middleware/multerConfig.js";
+import { unlinkSync } from "fs";
 
-exports.addGroupItem = (req, res) => {
-  upload.single("imageFile")(req, res, async (err) => {
+export function addGroup(req, res) {
+  single("imageFile")(req, res, async (err) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -17,96 +16,103 @@ exports.addGroupItem = (req, res) => {
       const { groupName } = req.body;
       const filePath = req.file.path;
 
-      const newGroupItem = new GroupItem({
+      const newGroup = new Group({
         groupName,
         filePath,
       });
 
-      await newGroupItem.save();
+      await newGroup.save();
       res
         .status(201)
-        .json({ message: "Group item added successfully", newGroupItem });
+        .json({ message: "Group item added successfully", newGroup });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   });
-};
+}
 
-exports.getAllGroupItems = async (req, res) => {
+export async function getAllGroups(req, res) {
   try {
-    const groupItems = await GroupItem.find();
-    res.status(200).json(groupItems);
+    const groups = await GroupItem.find();
+    res.status(200).json(groups);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-};
+}
 
-exports.DeleteGroup = async (req, res) => {
+export async function DeleteGroup(req, res) {
   try {
     const { id } = req.params;
 
-    const groupItem = await GroupItem.findById(id);
-    if (!groupItem) {
+    const group = await GroupItem.findById(id);
+    if (!group) {
       return res.status(404).json({ message: "Group not found." });
     }
 
-    if (groupItem.filePath) {
-      fs.unlinkSync(groupItem.filePath);
+    if (group.filePath) {
+      unlinkSync(group.filePath);
     }
 
-    const deletedGroup = await GroupItem.findByIdAndDelete(id);
-    if (deletedGroup) {
-      res
-        .status(200)
-        .json({ message: "Group and associated image deleted successfully." });
-    } else {
-      res.status(404).json({ message: "Group not found." });
-    }
+    await Group.findByIdAndDelete(id);
+    res
+      .status(200)
+      .json({ message: "Group and associated image deleted successfully." });
   } catch (error) {
     res.status(500).json({ message: "Failed to delete group." });
   }
-};
+}
 
-exports.UpdateGroupItem = async (req, res) => {
+
+
+
+export async function UpdateGroupItem(req, res) {
   try {
     const { groupId } = req.body;
 
-    const groupItem = await GroupItem.findOne({ _id: groupId });
-    
-    if (!groupItem) {
+    const Group = await findOne({ _id: groupId });
+
+    if (!Group) {
       return res.status(404).json({ message: "Group item not found" });
     }
-    res.status(200).json({ groupName: groupItem.groupName, filePath: groupItem.filePath });
+    res
+      .status(200)
+      .json({ groupName: Group.groupName, filePath: Group.filePath });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-};
+}
 
-exports.addUpdateGroupItem = (req, res) => {
-  upload.single("imageFile")(req, res, async (err) => {
+export function addUpdateGroup(req, res) {
+  single("imageFile")(req, res, async (err) => {
     if (err) {
-      return res.status(500).json({ error: "Failed to upload image. Please try again." });
+      return res
+        .status(500)
+        .json({ error: "Failed to upload image. Please try again." });
     }
 
     try {
       const { groupId, groupName } = req.body;
       const imageFile = req.file ? req.file.filename : null;
 
-      const groupItem = await GroupItem.findById({ _id: groupId });
-      if (!groupItem) {
+      const Group = await findById({ _id: groupId });
+      if (!Group) {
         return res.status(404).json({ error: "Group not found" });
       }
 
-      groupItem.groupName = groupName || groupItem.groupName;
+      Group.groupName = groupName || Group.groupName;
       if (imageFile) {
-        groupItem.imageFile = imageFile;
+        Group.imageFile = imageFile;
       }
 
-      await groupItem.save();
+      await Group.save();
 
-      res.status(200).json({ status: true, message: "Group updated successfully" });
+      res
+        .status(200)
+        .json({ status: true, message: "Group updated successfully" });
     } catch (error) {
-      res.status(500).json({ error: "Failed to update group. Please try again." });
+      res
+        .status(500)
+        .json({ error: "Failed to update group. Please try again." });
     }
   });
-};
+}

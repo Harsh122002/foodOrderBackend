@@ -1,7 +1,7 @@
-const nodemailer = require("nodemailer");
-require("dotenv").config();
-
-const transporter = nodemailer.createTransport({
+import { createTransport } from "nodemailer";
+import dotenv from "dotenv";
+dotenv.config();
+const transporter = createTransport({
   host: "smtp.gmail.com",
   port: 587,
   secure: false,
@@ -103,4 +103,10 @@ We regret to inform you that your order status is now: "${status}". If applicabl
   });
 };
 
-module.exports = { sendOtpEmail, resetPasswordOtp, sendOrderConfirmation,deleteOrderConfirmation,sendDeliveryBoysInformation };
+export default {
+  sendOtpEmail,
+  resetPasswordOtp,
+  sendOrderConfirmation,
+  deleteOrderConfirmation,
+  sendDeliveryBoysInformation,
+};

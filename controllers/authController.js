@@ -1,22 +1,31 @@
-const User = require("../models/userModel");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const { sendOtpEmail } = require("../utils/mailer");
-const { resetPasswordOtp } = require("../utils/mailer");
-const { sendDeliveryBoysInformation } = require("../utils/mailer");
+import User from "../models/userModel.js";
+import bcrypt from "bcryptjs";
+import _default from "../utils/mailer.js";
+const { resetPasswordOtp } = _default;
+import __default from "../utils/mailer.js";
+const { sendDeliveryBoysInformation } = __default;
 
-const passport = require("passport");
-const { default: axios } = require("axios");
+import passport from "passport";
+import { default as axios } from "axios";
 
-const GitHubStrategy = require("passport-github2").Strategy;
+import { Strategy as GitHubStrategy } from "passport-github2";
+import pkg from 'jsonwebtoken';
+const { sign } = pkg;
+const { genSalt, hash, compare } = bcrypt;
+
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
-exports.register = async (req, res) => {
+export async function register(req, res) {
   const { name, email, password, mobile } = req.body;
 
+  const nameRegex = /^[A-Za-z]*\s[a-z.]*$/;
   const mobileRegex = /^\d{10}$/;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (!nameRegex.test(name)) {
+    return res.status(400).json({ msg: "Invalid name format" });
+  }
 
   if (!mobileRegex.test(mobile)) {
     return res
@@ -29,9 +38,14 @@ exports.register = async (req, res) => {
   }
 
   try {
-    let user = await User.findOne({ email });
+    let user = await findOne({ email });
+
     if (user) {
-      return res.status(400).json({ msg: "User already exists" });
+      if (user.otp === undefined) {
+        return res.status(400).json({ msg: "User already exists" });
+      }
+      await deleteOne({ email });
+      console.log("User deleted successfully");
     }
 
     user = new User({
@@ -43,8 +57,8 @@ exports.register = async (req, res) => {
       otpExpires: Date.now() + 10 * 60 * 1000,
     });
 
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
+    const salt = await genSalt(10);
+    user.password = await hash(password, salt);
 
     await user.save();
     sendOtpEmail(user.email, user.otp);
@@ -54,16 +68,22 @@ exports.register = async (req, res) => {
     console.error(err.message);
     res.status(500).send("Server error");
   }
-};
+}
 
-exports.login = async (req, res) => {
+export async function login(req, res) {
   const { email, password } = req.body;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   try {
-    let user = await User.findOne({ email });
+    let user = await findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User does not exist" });
+    }
+    if (user.otp !== undefined) {
+      await findByIdAndDelete(user.id);
+      return res
+        .status(404)
+        .json({ message: "please Proper Register you profile" });
     }
     if (user.role === "admin") {
       return res.status(403).json({ message: "You are the owner" });
@@ -71,39 +91,36 @@ exports.login = async (req, res) => {
     if (!emailRegex.test(email)) {
       return res.status(400).json({ msg: "Invalid email format" });
     }
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid password" });
     }
+    user.status = "online";
+    await user.save();
 
     const payload = { user: { id: user._id } };
     const userId = user._id;
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" },
-      (err, token) => {
-        if (err) throw err;
+    sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" }, (err, token) => {
+      if (err) throw err;
 
-        res.json({
-          message: "Login successful",
-          userId,
-          token,
-        });
-      }
-    );
+      res.json({
+        message: "Login successful",
+        userId,
+        token,
+      });
+    });
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error");
   }
-};
+}
 
-exports.verifyOtp = async (req, res) => {
+export async function verifyOtp(req, res) {
   const { email, otp } = req.body;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   try {
-    const user = await User.findOne({ email });
+    const user = await findOne({ email });
 
     if (!user || user.otp !== otp || user.otpExpires < Date.now()) {
       return res.status(400).json({ msg: "Invalid OTP" });
@@ -117,22 +134,17 @@ exports.verifyOtp = async (req, res) => {
     await user.save();
 
     const payload = { user: { id: user.id } };
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" },
-      (err, token) => {
-        if (err) throw err;
-        res.json({ token });
-      }
-    );
+    sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" }, (err, token) => {
+      if (err) throw err;
+      res.json({ token });
+    });
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error");
   }
-};
+}
 
-exports.requestPasswordReset = async (req, res) => {
+export async function requestPasswordReset(req, res) {
   const { email } = req.body;
 
   if (!email) {
@@ -140,7 +152,7 @@ exports.requestPasswordReset = async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ email });
+    const user = await findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User does not exist" });
     }
@@ -159,12 +171,12 @@ exports.requestPasswordReset = async (req, res) => {
     console.error("Server error:", err.message);
     res.status(500).send("Server error");
   }
-};
+}
 
-exports.verifyOtpAndUpdatePassword = async (req, res) => {
+export async function verifyOtpAndUpdatePassword(req, res) {
   const { email, otp, newPassword } = req.body;
   try {
-    let user = await User.findOne({ email });
+    let user = await findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User does not exist" });
     }
@@ -173,8 +185,8 @@ exports.verifyOtpAndUpdatePassword = async (req, res) => {
       return res.status(400).json({ message: "Invalid or expired OTP" });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    const salt = await genSalt(10);
+    user.password = await hash(newPassword, salt);
 
     user.otp = undefined;
     user.otpExpires = undefined;
@@ -186,11 +198,11 @@ exports.verifyOtpAndUpdatePassword = async (req, res) => {
     console.error(err.message);
     res.status(500).send("Server error");
   }
-};
-exports.adminLogin = async (req, res) => {
+}
+export async function adminLogin(req, res) {
   const { email, password } = req.body;
   try {
-    let user = await User.findOne({ email });
+    let user = await findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User does not exist" });
     }
@@ -199,37 +211,38 @@ exports.adminLogin = async (req, res) => {
       return res.status(403).json({ message: "You are the owner" });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid password" });
     }
+    user.status = "online";
+    await user.save();
+    setTimeout(async () => {
+      user.status = "offline";
+      await user.save();
+    }, 3600000); // 1 hour
 
     const payload = { user: { id: user.id } };
     const userId = user._id;
 
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" },
-      (err, token) => {
-        if (err) throw err;
-        res.json({
-          message: "Login successful",
-          token,
-          userId,
-        });
-      }
-    );
+    sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" }, (err, token) => {
+      if (err) throw err;
+      res.json({
+        message: "Login successful",
+        token,
+        userId,
+      });
+    });
   } catch (err) {
     console.error(err.message);
     res.status(500).send("Server error");
   }
-};
-exports.getUserDetail = async (req, res) => {
+}
+export async function getUserDetail(req, res) {
   try {
     const { userId } = req.body;
 
-    const user = await User.findById({ _id: userId });
+    const user = await findById({ _id: userId });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -239,12 +252,12 @@ exports.getUserDetail = async (req, res) => {
     console.error(error);
     res.status(500).json({ error: "Server error" });
   }
-};
-exports.UpdateUserDetail = async (req, res) => {
+}
+export async function UpdateUserDetail(req, res) {
   try {
     const { email, name, mobile, address } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await findOne({ email });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -261,37 +274,37 @@ exports.UpdateUserDetail = async (req, res) => {
     console.error("Error updating user details:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
-};
-exports.getUserCount = async (req, res) => {
+}
+export async function getUserCount(req, res) {
   try {
     const role = "user";
-    const userCount = await User.countDocuments({ role });
+    const userCount = await countDocuments({ role });
     res.status(200).json({ userCount });
   } catch (err) {
     console.error("Error fetching user count:", err);
     res.status(500).json({ error: "Failed to fetch user count" });
   }
-};
-exports.getAllUser = async (req, res) => {
+}
+export async function getAllUser(req, res) {
   try {
     const role = { $in: ["user", "delivery"] };
-    const users = await User.find({ role });
+    const users = await find({ role });
     res.status(200).json({ users });
   } catch (err) {
     console.error("Error fetching users:", err);
     res.status(500).json({ message: "Error fetching users" });
   }
-};
+}
 const GITHUB_CLIENT_ID = process.env.GITHUB_CLIENT_ID;
 const GITHUB_CLIENT_SECRET = process.env.GITHUB_CLIENT_SECRET;
 
-exports.githubLogin = (req, res) => {
+export function githubLogin(req, res) {
   const redirectUri = `${process.env.REACT_APP_API_BASE_URL}/auth/github/callback`;
   const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${redirectUri}&scope=user:email`;
   res.redirect(githubAuthUrl);
-};
+}
 
-exports.githubCallback = async (req, res) => {
+export async function githubCallback(req, res) {
   try {
     const { code } = req.query;
 
@@ -338,10 +351,10 @@ exports.githubCallback = async (req, res) => {
       return res.status(400).send("GitHub account does not have a valid email");
     }
 
-    let user = await User.findOne({ email });
+    let user = await findOne({ email });
     if (!user) {
       const password = "GitHubUser";
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await hash(password, 10);
 
       user = new User({
         name: name,
@@ -351,7 +364,7 @@ exports.githubCallback = async (req, res) => {
       await user.save();
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
+    const token = sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
 
@@ -363,15 +376,15 @@ exports.githubCallback = async (req, res) => {
     console.error("Error during GitHub OAuth callback:", error);
     res.status(500).send("An error occurred during the GitHub login process");
   }
-};
+}
 
-exports.UserUpdate = async (req, res) => {
+export async function UserUpdate(req, res) {
   try {
     const { id } = req.params;
     console.log(id);
 
     const { name, email, mobile, address, role } = req.body;
-    const updatedUser = await User.findByIdAndUpdate(
+    const updatedUser = await findByIdAndUpdate(
       id,
       {
         $set: {
@@ -400,13 +413,13 @@ exports.UserUpdate = async (req, res) => {
       .status(500)
       .json({ message: "Error updating user", error: error.message });
   }
-};
+}
 
-exports.DeleteUser = async (req, res) => {
+export async function DeleteUser(req, res) {
   const { id } = req.params;
 
   try {
-    const deletedUser = await User.findByIdAndDelete(id);
+    const deletedUser = await findByIdAndDelete(id);
 
     if (!deletedUser) {
       return res.status(404).json({
@@ -424,8 +437,8 @@ exports.DeleteUser = async (req, res) => {
       error: error.message,
     });
   }
-};
-exports.GoogleRegister = async (req, res) => {
+}
+export async function GoogleRegister(req, res) {
   const { name, email } = req.body;
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -434,10 +447,10 @@ exports.GoogleRegister = async (req, res) => {
   }
 
   try {
-    let user = await User.findOne({ email });
+    let user = await findOne({ email });
     if (!user) {
       const password = "GoogleUser";
-      const hashedPassword = await bcrypt.hash(password, 10);
+      const hashedPassword = await hash(password, 10);
 
       user = new User({
         name: name,
@@ -455,9 +468,9 @@ exports.GoogleRegister = async (req, res) => {
     console.error(err.message);
     res.status(500).send("Server error");
   }
-};
+}
 
-exports.DeliveryBoyRegister = async (req, res) => {
+export async function DeliveryBoyRegister(req, res) {
   try {
     const { name, email, phone, password, address } = req.body;
 
@@ -474,21 +487,21 @@ exports.DeliveryBoyRegister = async (req, res) => {
       return res.status(400).json({ message: "Invalid email format" });
     }
 
-    let user = await User.findOne({ email });
+    let user = await findOne({ email });
     if (user) {
       return res.status(409).json({ message: "User already exists" });
     }
     sendDeliveryBoysInformation(email, password);
 
     const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await hash(password, saltRounds);
 
     const role = "delivery";
 
     user = new User({
       name,
       email,
-      mobile:phone,
+      mobile: phone,
       password: hashedPassword,
       address,
       role,
@@ -503,4 +516,54 @@ exports.DeliveryBoyRegister = async (req, res) => {
     console.error("Error during registration:", error);
     res.status(500).json({ message: "Internal Server Error" });
   }
-};
+}
+export async function BoyLogin(req, res) {
+  const { email, password, role } = req.body;
+
+  try {
+    // Check if the user exists
+    const user = await findOne({ email });
+    if (!user) {
+      return res.status(404).json({ message: "User does not exist" });
+    }
+
+    // Check if the user's role is 'delivery'
+    if (user.role !== role) {
+      return res
+        .status(403)
+        .json({ message: "Access denied: Not a delivery user" });
+    }
+
+    // Verify the password
+    const isPasswordValid = await compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: "Invalid password" });
+    }
+
+    // Generate JWT token
+    const payload = { user: { id: user.id } };
+    const token = sign(payload, process.env.JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    // Respond with the token and user details
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      userId: user._id,
+    });
+  } catch (err) {
+    console.error("Error during login:", err.message);
+    res.status(500).json({ message: "Server error" });
+  }
+}
+export async function logOut(req, res) {
+  const id = req.params.id;
+  const user = await findById(id);
+  if (!user) {
+    return res.status(404).json({ message: "User not found" });
+  }
+  user.status = "offline";
+  await user.save();
+  res.status(200).json({ message: "Logged out successfully" });
+}

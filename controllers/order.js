@@ -1,13 +1,9 @@
-const Order = require("../models/orderModal");
-const User = require("../models/userModel"); // Replace with your User model import
-const {
-  sendOrderConfirmation,
-  deleteOrderConfirmation,
-} = require("../utils/mailer");
-const Product = require("../models/productModal");
-const moment = require('moment'); // Install moment.js for date manipulation
+import Order from "../models/orderModal.js";
+import mailer from "../utils/mailer.js";
+const { sendOrderConfirmation, deleteOrderConfirmation } = mailer;
+import moment from "moment"; // Install moment.js for date manipulation
 
-exports.OrderDetail = async (req, res) => {
+export async function OrderDetail(req, res) {
   const orderData = req.body;
 
   if (!orderData.address) {
@@ -18,7 +14,7 @@ exports.OrderDetail = async (req, res) => {
 
   try {
     const order = new Order(orderData);
-    const user = await User.findById(order.userId);
+    const user = await _findById(order.userId);
 
     sendOrderConfirmation(user.email, order.status);
 
@@ -35,22 +31,29 @@ exports.OrderDetail = async (req, res) => {
       error: error.message,
     });
   }
-};
+}
 
-exports.getAllOrder = async (req, res) => {
+export async function getAllOrder(req, res) {
   try {
-    const { userId } = req.body;
+    const { userId, page = 1, limit = 5 } = req.body;
     if (!userId) {
       return res.status(400).json({ message: "User ID is required" });
     }
 
-    const orders = await Order.find({ userId }).sort({ createdAt: -1 });
+    const skip = (page - 1) * limit;
+
+    const orders = await find({ userId })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    const totalOrders = await countDocuments({ userId });
 
     const ordersWithDetails = await Promise.all(
       orders.map(async (order) => {
         const productDetails = await Promise.all(
           order.products.map(async (product) => {
-            const productInfo = await Product.findOne({
+            const productInfo = await findOne({
               productName: product.name,
             });
 
@@ -74,19 +77,24 @@ exports.getAllOrder = async (req, res) => {
       return res.status(404).json({ message: "Orders not found" });
     }
 
-    res.status(200).json(ordersWithDetails);
+    res.status(200).json({
+      orders: ordersWithDetails,
+      totalOrders,
+      totalPages: Math.ceil(totalOrders / limit),
+      currentPage: page,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
-};
+}
 
-exports.OrderDelete = async (req, res) => {
+export async function OrderDelete(req, res) {
   const { orderId } = req.body;
 
   try {
-    const order = await Order.findById(orderId);
-    const user = await User.findById(order.userId);
+    const order = await findById(orderId);
+    const user = await _findById(order.userId);
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
@@ -108,16 +116,16 @@ exports.OrderDelete = async (req, res) => {
     console.error(error);
     res.status(500).json({ message: "Server error" });
   }
-};
+}
 
-exports.getAllOrderStatuses = async (req, res) => {
+export async function getAllOrderStatuses(req, res) {
   try {
     const [pendingOrders, runningOrders, completeOrders, declinedOrders] =
       await Promise.all([
-        Order.find({ status: "pending" }),
-        Order.find({ status: "running" }),
-        Order.find({ status: "completed" }),
-        Order.find({ status: "declined" }),
+        find({ status: "pending" }),
+        find({ status: "running" }),
+        find({ status: "completed" }),
+        find({ status: "declined" }),
       ]);
 
     const orderStatuses = {
@@ -132,11 +140,11 @@ exports.getAllOrderStatuses = async (req, res) => {
     console.error("Error fetching order statuses:", err);
     res.status(500).json({ error: "Failed to fetch order statuses" });
   }
-};
+}
 
-exports.getAllPendingOrder = async (req, res) => {
+export async function getAllPendingOrder(req, res) {
   try {
-    const pendingOrders = await Order.find({ status: "pending" });
+    const pendingOrders = await find({ status: "pending" });
 
     if (!pendingOrders || pendingOrders.length === 0) {
       return res.status(404).json({ message: "No pending orders found" });
@@ -144,7 +152,7 @@ exports.getAllPendingOrder = async (req, res) => {
 
     const ordersWithUserDetails = await Promise.all(
       pendingOrders.map(async (order) => {
-        const user = await User.findById(order.userId);
+        const user = await _findById(order.userId);
 
         if (!user) {
           return null;
@@ -152,7 +160,7 @@ exports.getAllPendingOrder = async (req, res) => {
 
         const productsWithFilePath = await Promise.all(
           order.products.map(async (product) => {
-            const productDetails = await Product.findOne({
+            const productDetails = await findOne({
               productName: product.name,
             });
 
@@ -172,7 +180,7 @@ exports.getAllPendingOrder = async (req, res) => {
           address: order.address,
           totalAmount: order.totalAmount,
           paymentMethod: order.paymentMethod,
-          added:order.createdAt,
+          added: order.createdAt,
           products: productsWithFilePath,
           user: {
             username: user.name,
@@ -190,15 +198,21 @@ exports.getAllPendingOrder = async (req, res) => {
       error: "Failed to fetch pending orders with user details",
     });
   }
-};
+}
 
-exports.updateOrderStatus = async (req, res) => {
+export async function updateOrderStatus(req, res) {
   try {
     const { orderId, status } = req.body;
-    const order = await Order.findById(orderId);
-    const user = await User.findById(order.userId);
+    const order = await findById(orderId);
+    const user = await _findById(order.userId);
     sendOrderConfirmation(user.email, status);
-    const updatedOrder = await Order.findByIdAndUpdate(
+    const allDeliveryBoy = await _find({
+      role: "delivery",
+      status: "online",
+    });
+    console.log(allDeliveryBoy);
+
+    const updatedOrder = await findByIdAndUpdate(
       orderId,
       { status },
       { new: true }
@@ -208,11 +222,11 @@ exports.updateOrderStatus = async (req, res) => {
     console.error("Error updating order status:", error);
     res.status(500).json({ error: "Failed to update order status" });
   }
-};
+}
 
-exports.getAllCompleteOrder = async (req, res) => {
+export async function getAllCompleteOrder(req, res) {
   try {
-    const completedOrders = await Order.find({ status: "completed" });
+    const completedOrders = await find({ status: "completed" });
 
     if (!completedOrders || completedOrders.length === 0) {
       return res.status(404).json({ message: "No completed orders found" });
@@ -221,7 +235,7 @@ exports.getAllCompleteOrder = async (req, res) => {
     let ordersWithUserDetails = [];
 
     for (let order of completedOrders) {
-      const user = await User.findById(order.userId);
+      const user = await _findById(order.userId);
 
       if (!user) {
         console.error(`User not found for order ${order._id}`);
@@ -230,7 +244,7 @@ exports.getAllCompleteOrder = async (req, res) => {
 
       const productsWithImages = await Promise.all(
         order.products.map(async (product) => {
-          const productDetails = await Product.findOne({
+          const productDetails = await findOne({
             productName: product.name,
           });
 
@@ -250,7 +264,7 @@ exports.getAllCompleteOrder = async (req, res) => {
         address: order.address,
         totalAmount: order.totalAmount,
         products: productsWithImages,
-        added:order.createdAt,
+        added: order.createdAt,
         paymentMethod: order.paymentMethod,
         user: {
           username: user.name,
@@ -268,11 +282,11 @@ exports.getAllCompleteOrder = async (req, res) => {
       error: "Failed to fetch completed orders with user details",
     });
   }
-};
+}
 
-exports.getAllRunningOrder = async (req, res) => {
+export async function getAllRunningOrder(req, res) {
   try {
-    const runningOrders = await Order.find({ status: "running" });
+    const runningOrders = await find({ status: "running" });
 
     if (!runningOrders || runningOrders.length === 0) {
       return res.status(404).json({ message: "No running orders found" });
@@ -281,7 +295,7 @@ exports.getAllRunningOrder = async (req, res) => {
     let ordersWithUserDetails = [];
 
     for (let order of runningOrders) {
-      const user = await User.findById(order.userId);
+      const user = await _findById(order.userId);
 
       if (!user) {
         console.error(`User not found for order ${order._id}`);
@@ -290,7 +304,7 @@ exports.getAllRunningOrder = async (req, res) => {
 
       const productsWithImages = await Promise.all(
         order.products.map(async (product) => {
-          const productDetails = await Product.findOne({
+          const productDetails = await findOne({
             productName: product.name,
           });
 
@@ -310,7 +324,7 @@ exports.getAllRunningOrder = async (req, res) => {
         address: order.address,
         totalAmount: order.totalAmount,
         products: productsWithImages,
-        added:order.createdAt,
+        added: order.createdAt,
         paymentMethod: order.paymentMethod,
         user: {
           username: user.name,
@@ -328,11 +342,11 @@ exports.getAllRunningOrder = async (req, res) => {
       error: "Failed to fetch running orders with user details",
     });
   }
-};
+}
 
-exports.getAllDeclinedOrder = async (req, res) => {
+export async function getAllDeclinedOrder(req, res) {
   try {
-    const declinedOrders = await Order.find({ status: "declined" });
+    const declinedOrders = await find({ status: "declined" });
 
     if (!declinedOrders || declinedOrders.length === 0) {
       return res.status(404).json({ message: "No declined orders found" });
@@ -341,7 +355,7 @@ exports.getAllDeclinedOrder = async (req, res) => {
     let ordersWithUserDetails = [];
 
     for (let order of declinedOrders) {
-      const user = await User.findById(order.userId);
+      const user = await _findById(order.userId);
 
       if (!user) {
         console.error(`User not found for order ${order._id}`);
@@ -350,7 +364,7 @@ exports.getAllDeclinedOrder = async (req, res) => {
 
       const productsWithImages = await Promise.all(
         order.products.map(async (product) => {
-          const productDetails = await Product.findOne({
+          const productDetails = await findOne({
             productName: product.name,
           });
 
@@ -370,7 +384,7 @@ exports.getAllDeclinedOrder = async (req, res) => {
         address: order.address,
         totalAmount: order.totalAmount,
         products: productsWithImages,
-        added:order.createdAt,
+        added: order.createdAt,
         paymentMethod: order.paymentMethod,
         user: {
           username: user.name,
@@ -388,11 +402,11 @@ exports.getAllDeclinedOrder = async (req, res) => {
       error: "Failed to fetch declined orders with user details",
     });
   }
-};
+}
 
-exports.getAllPaymentAmount = async (req, res) => {
+export async function getAllPaymentAmount(req, res) {
   try {
-    const [result] = await Order.aggregate([
+    const [result] = await aggregate([
       { $group: { _id: null, totalAmount: { $sum: "$totalAmount" } } },
     ]);
 
@@ -401,13 +415,13 @@ exports.getAllPaymentAmount = async (req, res) => {
     console.error("Error calculating total payment amount:", error);
     res.status(500).json({ error: "Failed to calculate total payment amount" });
   }
-};
+}
 
-exports.updateRating = async (req, res) => {
+export async function updateRating(req, res) {
   const { orderId, rating, description } = req.body;
 
   try {
-    const order = await Order.findById(orderId);
+    const order = await findById(orderId);
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -425,16 +439,20 @@ exports.updateRating = async (req, res) => {
     console.error("Error updating rating:", error);
     return res.status(500).json({ message: "Internal server error" });
   }
-};
+}
 
-
-exports.getMonthlyCompleteOrder = async (req, res) => {
+export async function getMonthlyCompleteOrder(req, res) {
   try {
-    const completedOrders = await Order.find({ status: "completed" });
-    const declinedOrders = await Order.find({ status: "declined" });
+    const completedOrders = await find({ status: "completed" });
+    const declinedOrders = await find({ status: "declined" });
 
-    if ((!completedOrders || completedOrders.length === 0) && (!declinedOrders || declinedOrders.length === 0)) {
-      return res.status(404).json({ message: "No completed or declined orders found" });
+    if (
+      (!completedOrders || completedOrders.length === 0) &&
+      (!declinedOrders || declinedOrders.length === 0)
+    ) {
+      return res
+        .status(404)
+        .json({ message: "No completed or declined orders found" });
     }
 
     // Initialize an empty object to store data by month
@@ -472,21 +490,29 @@ exports.getMonthlyCompleteOrder = async (req, res) => {
       declinedOrders: monthlyData[month].declinedOrders,
     }));
 
-    res.status(200).json({data: chartData });
+    res.status(200).json({ data: chartData });
   } catch (error) {
-    console.error("Error fetching completed and declined orders monthly data:", error);
+    console.error(
+      "Error fetching completed and declined orders monthly data:",
+      error
+    );
     res.status(500).json({
       error: "Failed to fetch completed and declined orders monthly data",
     });
   }
-};
-exports.getMonthlyOrderAmounts = async (req, res) => {
+}
+export async function getMonthlyOrderAmounts(req, res) {
   try {
-    const completedOrders = await Order.find({ status: "completed" });
-    const declinedOrders = await Order.find({ status: "declined" });
+    const completedOrders = await find({ status: "completed" });
+    const declinedOrders = await find({ status: "declined" });
 
-    if ((!completedOrders || completedOrders.length === 0) && (!declinedOrders || declinedOrders.length === 0)) {
-      return res.status(404).json({ message: "No completed or declined orders found" });
+    if (
+      (!completedOrders || completedOrders.length === 0) &&
+      (!declinedOrders || declinedOrders.length === 0)
+    ) {
+      return res
+        .status(404)
+        .json({ message: "No completed or declined orders found" });
     }
 
     const monthlyData = {};
@@ -521,9 +547,12 @@ exports.getMonthlyOrderAmounts = async (req, res) => {
 
     res.status(200).json({ data: chartData });
   } catch (error) {
-    console.error("Error fetching completed and declined orders monthly amounts:", error);
+    console.error(
+      "Error fetching completed and declined orders monthly amounts:",
+      error
+    );
     res.status(500).json({
       error: "Failed to fetch completed and declined orders monthly amounts",
     });
   }
-};
+}

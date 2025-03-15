@@ -1,11 +1,11 @@
-const PDFDocument = require("pdfkit");
-const fs = require("fs");
+import PDFDocument from "pdfkit";
+import { createWriteStream } from "fs";
 
 async function GeneratePDF(orderData, outputPath, OrderId) {
   console.log(OrderId);
   try {
     const doc = new PDFDocument({ size: "A4", margin: 50 });
-    const stream = fs.createWriteStream(outputPath);
+    const stream = createWriteStream(outputPath);
     doc.pipe(stream);
 
     // Title
@@ -114,4 +114,4 @@ async function GeneratePDF(orderData, outputPath, OrderId) {
   }
 }
 
-module.exports = GeneratePDF;
+export default GeneratePDF;

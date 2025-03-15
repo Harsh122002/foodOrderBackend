@@ -1,8 +1,8 @@
-const { razorpay } = require("../utils/razpay");
+import  razorpay  from "../utils/razpay.js";
 
 console.log("Imported Razorpay instance:", razorpay);
 
-exports.Payment = async (req, res) => {
+export async function Payment(req, res) {
   try {
     const { totalAmount, currency } = req.body;
 
@@ -42,9 +42,9 @@ exports.Payment = async (req, res) => {
     console.error("Error creating order:", error); // Log the entire error object
     res.status(500).json({ error: "Failed to create order" });
   }
-};
+}
 
-exports.PaymentVerify = async (req, res) => {
+export async function PaymentVerify(req, res) {
   try {
     const { orderId, paymentId, signature } = req.body;
 
@@ -78,4 +78,4 @@ exports.PaymentVerify = async (req, res) => {
     console.error("Error verifying payment:", error); // Log the entire error object
     res.status(500).json({ error: "Failed to verify payment" });
   }
-};
+}
