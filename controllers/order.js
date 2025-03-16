@@ -1,7 +1,10 @@
+import GroupItem from "../models/groupModal.js";
 import Order from "../models/orderModal.js";
+import ProductItem from "../models/productModal.js";
 import mailer from "../utils/mailer.js";
+import User from "../models/userModal.js";
 const { sendOrderConfirmation, deleteOrderConfirmation } = mailer;
-import moment from "moment"; // Install moment.js for date manipulation
+import moment from "moment";
 
 export async function OrderDetail(req, res) {
   const orderData = req.body;
@@ -14,7 +17,7 @@ export async function OrderDetail(req, res) {
 
   try {
     const order = new Order(orderData);
-    const user = await _findById(order.userId);
+    const user = await User.findById(order.userId);
 
     sendOrderConfirmation(user.email, order.status);
 
@@ -42,18 +45,18 @@ export async function getAllOrder(req, res) {
 
     const skip = (page - 1) * limit;
 
-    const orders = await find({ userId })
+    const orders = await Order.find({ userId })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
 
-    const totalOrders = await countDocuments({ userId });
+    const totalOrders = await Order.countDocuments({ userId });
 
     const ordersWithDetails = await Promise.all(
       orders.map(async (order) => {
         const productDetails = await Promise.all(
           order.products.map(async (product) => {
-            const productInfo = await findOne({
+            const productInfo = await ProductItem.findOne({
               productName: product.name,
             });
 
@@ -93,8 +96,8 @@ export async function OrderDelete(req, res) {
   const { orderId } = req.body;
 
   try {
-    const order = await findById(orderId);
-    const user = await _findById(order.userId);
+    const order = await Order.findById(orderId);
+    const user = await User.findById(order.userId);
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
@@ -104,7 +107,7 @@ export async function OrderDelete(req, res) {
     deleteOrderConfirmation(user.email, updatedOrder.status);
 
     let message = "Order cancelled successfully.";
-    if (order.paymentMode === "online") {
+    if (order.paymentMethod === "online") {
       message += " You will receive a refund within 7 days.";
     }
 
@@ -122,10 +125,10 @@ export async function getAllOrderStatuses(req, res) {
   try {
     const [pendingOrders, runningOrders, completeOrders, declinedOrders] =
       await Promise.all([
-        find({ status: "pending" }),
-        find({ status: "running" }),
-        find({ status: "completed" }),
-        find({ status: "declined" }),
+        Order.find({ status: "pending" }),
+        Order.find({ status: "running" }),
+        Order.find({ status: "completed" }),
+        Order.find({ status: "declined" }),
       ]);
 
     const orderStatuses = {
@@ -144,7 +147,7 @@ export async function getAllOrderStatuses(req, res) {
 
 export async function getAllPendingOrder(req, res) {
   try {
-    const pendingOrders = await find({ status: "pending" });
+    const pendingOrders = await Order.find({ status: "pending" });
 
     if (!pendingOrders || pendingOrders.length === 0) {
       return res.status(404).json({ message: "No pending orders found" });
@@ -152,7 +155,7 @@ export async function getAllPendingOrder(req, res) {
 
     const ordersWithUserDetails = await Promise.all(
       pendingOrders.map(async (order) => {
-        const user = await _findById(order.userId);
+        const user = await User.findById(order.userId);
 
         if (!user) {
           return null;
@@ -160,7 +163,7 @@ export async function getAllPendingOrder(req, res) {
 
         const productsWithFilePath = await Promise.all(
           order.products.map(async (product) => {
-            const productDetails = await findOne({
+            const productDetails = await ProductItem.findOne({
               productName: product.name,
             });
 
@@ -203,16 +206,16 @@ export async function getAllPendingOrder(req, res) {
 export async function updateOrderStatus(req, res) {
   try {
     const { orderId, status } = req.body;
-    const order = await findById(orderId);
-    const user = await _findById(order.userId);
+    const order = await Order.findById(orderId);
+    const user = await User.findById(order.userId);
     sendOrderConfirmation(user.email, status);
-    const allDeliveryBoy = await _find({
+    const allDeliveryBoy = await User.find({
       role: "delivery",
       status: "online",
     });
     console.log(allDeliveryBoy);
 
-    const updatedOrder = await findByIdAndUpdate(
+    const updatedOrder = await Order.findByIdAndUpdate(
       orderId,
       { status },
       { new: true }
@@ -226,7 +229,7 @@ export async function updateOrderStatus(req, res) {
 
 export async function getAllCompleteOrder(req, res) {
   try {
-    const completedOrders = await find({ status: "completed" });
+    const completedOrders = await Order.find({ status: "completed" });
 
     if (!completedOrders || completedOrders.length === 0) {
       return res.status(404).json({ message: "No completed orders found" });
@@ -235,7 +238,7 @@ export async function getAllCompleteOrder(req, res) {
     let ordersWithUserDetails = [];
 
     for (let order of completedOrders) {
-      const user = await _findById(order.userId);
+      const user = await User.findById(order.userId);
 
       if (!user) {
         console.error(`User not found for order ${order._id}`);
@@ -244,7 +247,7 @@ export async function getAllCompleteOrder(req, res) {
 
       const productsWithImages = await Promise.all(
         order.products.map(async (product) => {
-          const productDetails = await findOne({
+          const productDetails = await ProductItem.findOne({
             productName: product.name,
           });
 
@@ -286,7 +289,7 @@ export async function getAllCompleteOrder(req, res) {
 
 export async function getAllRunningOrder(req, res) {
   try {
-    const runningOrders = await find({ status: "running" });
+    const runningOrders = await Order.find({ status: "running" });
 
     if (!runningOrders || runningOrders.length === 0) {
       return res.status(404).json({ message: "No running orders found" });
@@ -295,7 +298,7 @@ export async function getAllRunningOrder(req, res) {
     let ordersWithUserDetails = [];
 
     for (let order of runningOrders) {
-      const user = await _findById(order.userId);
+      const user = await User.findById(order.userId);
 
       if (!user) {
         console.error(`User not found for order ${order._id}`);
@@ -304,7 +307,7 @@ export async function getAllRunningOrder(req, res) {
 
       const productsWithImages = await Promise.all(
         order.products.map(async (product) => {
-          const productDetails = await findOne({
+          const productDetails = await ProductItem.findOne({
             productName: product.name,
           });
 
@@ -346,7 +349,7 @@ export async function getAllRunningOrder(req, res) {
 
 export async function getAllDeclinedOrder(req, res) {
   try {
-    const declinedOrders = await find({ status: "declined" });
+    const declinedOrders = await Order.find({ status: "declined" });
 
     if (!declinedOrders || declinedOrders.length === 0) {
       return res.status(404).json({ message: "No declined orders found" });
@@ -355,7 +358,7 @@ export async function getAllDeclinedOrder(req, res) {
     let ordersWithUserDetails = [];
 
     for (let order of declinedOrders) {
-      const user = await _findById(order.userId);
+      const user = await User.findById(order.userId);
 
       if (!user) {
         console.error(`User not found for order ${order._id}`);
@@ -364,7 +367,7 @@ export async function getAllDeclinedOrder(req, res) {
 
       const productsWithImages = await Promise.all(
         order.products.map(async (product) => {
-          const productDetails = await findOne({
+          const productDetails = await ProductItem.findOne({
             productName: product.name,
           });
 
@@ -406,7 +409,7 @@ export async function getAllDeclinedOrder(req, res) {
 
 export async function getAllPaymentAmount(req, res) {
   try {
-    const [result] = await aggregate([
+    const [result] = await Order.aggregate([
       { $group: { _id: null, totalAmount: { $sum: "$totalAmount" } } },
     ]);
 
@@ -421,7 +424,7 @@ export async function updateRating(req, res) {
   const { orderId, rating, description } = req.body;
 
   try {
-    const order = await findById(orderId);
+    const order = await Order.findById(orderId);
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -443,8 +446,8 @@ export async function updateRating(req, res) {
 
 export async function getMonthlyCompleteOrder(req, res) {
   try {
-    const completedOrders = await find({ status: "completed" });
-    const declinedOrders = await find({ status: "declined" });
+    const completedOrders = await Order.find({ status: "completed" });
+    const declinedOrders = await Order.find({ status: "declined" });
 
     if (
       (!completedOrders || completedOrders.length === 0) &&
@@ -455,15 +458,12 @@ export async function getMonthlyCompleteOrder(req, res) {
         .json({ message: "No completed or declined orders found" });
     }
 
-    // Initialize an empty object to store data by month
     const monthlyData = {};
 
-    // Helper function to process orders
     const processOrders = (orders, status) => {
       for (let order of orders) {
-        const orderMonth = moment(order.createdAt).format("YYYY-MM"); // Get month in YYYY-MM format
+        const orderMonth = moment(order.createdAt).format("YYYY-MM");
 
-        // Check if the month already exists in the monthlyData object
         if (!monthlyData[orderMonth]) {
           monthlyData[orderMonth] = {
             completedOrders: 0,
@@ -479,11 +479,9 @@ export async function getMonthlyCompleteOrder(req, res) {
       }
     };
 
-    // Process completed and declined orders
     processOrders(completedOrders, "completed");
     processOrders(declinedOrders, "declined");
 
-    // Prepare data for the chart (format it as an array of months and values)
     const chartData = Object.keys(monthlyData).map((month) => ({
       month,
       completedOrders: monthlyData[month].completedOrders,
@@ -501,10 +499,11 @@ export async function getMonthlyCompleteOrder(req, res) {
     });
   }
 }
+
 export async function getMonthlyOrderAmounts(req, res) {
   try {
-    const completedOrders = await find({ status: "completed" });
-    const declinedOrders = await find({ status: "declined" });
+    const completedOrders = await Order.find({ status: "completed" });
+    const declinedOrders = await Order.find({ status: "declined" });
 
     if (
       (!completedOrders || completedOrders.length === 0) &&

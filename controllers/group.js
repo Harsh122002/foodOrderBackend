@@ -1,9 +1,9 @@
-import GroupItem from "../models/groupModel.js";
-import single  from "../middleware/multerConfig.js";
+import GroupItem from "../models/groupModal.js";
+import upload from "../middleware/multerConfig.js";
 import { unlinkSync } from "fs";
 
 export function addGroup(req, res) {
-  single("imageFile")(req, res, async (err) => {
+  upload.single("imageFile")(req, res, async (err) => {
     if (err) {
       return res.status(500).json({ error: err.message });
     }
@@ -69,7 +69,7 @@ export async function UpdateGroupItem(req, res) {
   try {
     const { groupId } = req.body;
 
-    const Group = await findOne({ _id: groupId });
+    const Group = await GroupItem.findOne({ _id: groupId });
 
     if (!Group) {
       return res.status(404).json({ message: "Group item not found" });
@@ -83,7 +83,7 @@ export async function UpdateGroupItem(req, res) {
 }
 
 export function addUpdateGroup(req, res) {
-  single("imageFile")(req, res, async (err) => {
+ upload.single("imageFile")(req, res, async (err) => {
     if (err) {
       return res
         .status(500)
@@ -94,7 +94,7 @@ export function addUpdateGroup(req, res) {
       const { groupId, groupName } = req.body;
       const imageFile = req.file ? req.file.filename : null;
 
-      const Group = await findById({ _id: groupId });
+      const Group = await GroupItem.findById({ _id: groupId });
       if (!Group) {
         return res.status(404).json({ error: "Group not found" });
       }

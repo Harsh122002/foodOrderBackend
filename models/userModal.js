@@ -20,6 +20,5 @@ const UserSchema = new Schema({
 
 const User = model("User", UserSchema);
 
-export const findById = (id) => User.findById(id);
 
 export default User;

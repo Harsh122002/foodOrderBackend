@@ -1,46 +1,55 @@
-import  razorpay  from "../utils/razpay.js";
+import razorpay from "../utils/razpay.js";
+import crypto from "crypto";
 
-console.log("Imported Razorpay instance:", razorpay);
-
+// Payment Order Creation Controller
 export async function Payment(req, res) {
   try {
-    const { totalAmount, currency } = req.body;
+    const { totalAmount, currency = "INR" } = req.body;
 
-    console.log("Received request to create payment with:", {
+    console.log("Received payment creation request with data:", {
       totalAmount,
       currency,
     });
 
-    // Convert totalAmount to a number
+    // Convert totalAmount to a number and validate
     const amount = Number(totalAmount);
-
-    // Validate the amount
     if (isNaN(amount) || amount <= 0) {
-      console.error("Invalid amount provided:", totalAmount);
+      console.error("Invalid amount received:", totalAmount);
       return res.status(400).json({ error: "Invalid amount provided" });
     }
 
+    // Prepare order options
     const options = {
-      amount: amount * 100, // amount in paisa
-      currency: "INR",
+      amount: amount * 100, // Convert to paisa
+      currency,
       receipt: `order_${Date.now()}`,
-      payment_capture: 1,
+      payment_capture: 1, // Auto capture after successful payment
     };
 
-    console.log("Creating order with options:", options);
+    console.log("Creating Razorpay order with options:", options);
 
-    // Create the order and log the response
-    const response = await razorpay.orders.create(options);
-    console.log("Order created successfully:", response);
+    // Create order
+    const order = await razorpay.orders.create(options);
+    console.log("Order created successfully:", order);
 
-    res.status(200).json({
-      orderId: response.id,
-      amount: response.amount,
-      currency: response.currency,
+    // Respond with order details
+    return res.status(200).json({
+      success: true,
+      message: "Order created successfully",
+      data: {
+        orderId: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        receipt: order.receipt,
+      },
     });
   } catch (error) {
-    console.error("Error creating order:", error); // Log the entire error object
-    res.status(500).json({ error: "Failed to create order" });
+    console.error("Error while creating Razorpay order:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Failed to create Razorpay order",
+      details: error.message, // Optional: include error details for debugging
+    });
   }
 }
 

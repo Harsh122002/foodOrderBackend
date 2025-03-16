@@ -1,9 +1,9 @@
 import { Router } from "express";
 const router = Router();
 import { register, verifyOtp, login, requestPasswordReset, verifyOtpAndUpdatePassword, adminLogin, getUserCount, getAllUser, githubLogin, githubCallback, DeleteUser, UserUpdate, getUserDetail, UpdateUserDetail, GoogleRegister, DeliveryBoyRegister, BoyLogin, logOut } from "../controllers/authController.js";
-import {   DeleteGroup, UpdateGroupItem } from "../controllers/group.js";
+import {   addUpdateGroup, DeleteGroup, getAllGroups, UpdateGroupItem } from "../controllers/group.js";
 import authenticateJWT from "../middleware/authMiddleware.js";
-import { addProductItem, getAllProduct, getProductsByGroup, DeleteProduct, UpdateProductItem, addUpdateProductItem } from "../controllers/product.js";
+import { addProductItem, getAllProduct, getProductsByGroup, DeleteProduct, UpdateProductItem, addUpdateProductItem, getAllProductForAdmin } from "../controllers/product.js";
 import { OrderDetail, getAllOrder, OrderDelete, getAllOrderStatuses, getAllPendingOrder, updateOrderStatus, getAllCompleteOrder, getAllDeclinedOrder, getAllRunningOrder, getAllPaymentAmount, updateRating, getMonthlyCompleteOrder, getMonthlyOrderAmounts } from "../controllers/order.js";
 import { GeneratePdf } from "../controllers/generatePdf.js";
 import { Payment, PaymentVerify } from "../controllers/payment.js";
@@ -20,7 +20,7 @@ router.post("/request-password-reset", requestPasswordReset);
 router.post("/verify-password", verifyOtpAndUpdatePassword);
 router.post("/adminLogin", adminLogin);
 router.post("/addGroupItem", authenticateJWT, UpdateGroupItem);
-// router.get("/getAllGroup", getAllGroupItem);
+router.get("/getAllGroup", getAllGroups);
 router.post("/addProduct", authenticateJWT, addProductItem);
 router.get("/getAllProduct/:page", getAllProduct);
 router.post("/getUserDetail", authenticateJWT, getUserDetail);
@@ -45,7 +45,7 @@ router.delete(`/deleteProduct/:id`, DeleteProduct);
 router.get("/getTotalAmount", getAllPaymentAmount);
 router.post("/updateRating", updateRating);
 router.post("/updateGroup", UpdateGroupItem);
-// router.post("/update-Group", addUpdateGroupItem);
+router.post("/update-Group", addUpdateGroup);
 router.post("/updateProduct", UpdateProductItem);
 router.post("/update-Proudct", addUpdateProductItem);
 router.put("/update-user/:id", UserUpdate);
@@ -55,7 +55,7 @@ router.get("/getMonthlyOrderAmounts", getMonthlyOrderAmounts);
 
 router.get("/auth/github", githubLogin);
 router.get("/logout/:id", logOut);
-
+router.get("/getAllProductForAdmin",getAllProductForAdmin)
 router.get("/auth/github/callback", githubCallback);
-router.get("/AllDiscountProduct", RetrievalAllProductForDiscount);
+router.post("/AllDiscountProduct", RetrievalAllProductForDiscount);
 export default router;

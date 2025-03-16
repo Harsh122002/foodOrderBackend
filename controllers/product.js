@@ -1,22 +1,21 @@
 import ProductItem from "../models/productModal.js";
-import  single  from "../middleware/multerConfig.js";
+import GroupItem from "../models/groupModal.js"; // Assuming this model contains group info
+import upload from "../middleware/multerConfig.js";
 import { unlinkSync } from "fs";
 
+// Add Product Item
 export function addProductItem(req, res) {
-  single("imageFile")(req, res, async (err) => {
-    if (err) {
-      return res.status(500).json({ error: err.message });
-    }
+ upload.single("imageFile")(req, res, async (err) => {
+    if (err) return res.status(500).json({ error: err.message });
 
     try {
-      if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-      }
+      if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
       const { productName, price, groupName, description } = req.body;
       const filePath = req.file.path;
-      console.log(req.body);
-      const existingGroup = await _findById(groupName);
+
+      // Check if group exists
+      const existingGroup = await Group.findById(groupName);
       if (!existingGroup) {
         return res.status(404).json({ error: "Group not found" });
       }
@@ -31,31 +30,33 @@ export function addProductItem(req, res) {
 
       await newProductItem.save();
 
-      res
-        .status(201)
-        .json({ message: "Product item added successfully", newProductItem });
+      res.status(201).json({
+        message: "Product item added successfully",
+        product: newProductItem,
+      });
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
   });
 }
 
+// Get All Products with Pagination
 export async function getAllProduct(req, res) {
   try {
-    const page = parseInt(req.params.page) || 1; 
-    const limit = 8; 
-    const skip = (page - 1) * limit; 
+    const page = parseInt(req.params.page) || 1;
+    const limit = 8;
+    const skip = (page - 1) * limit;
 
-    const products = await find().skip(skip).limit(limit);
-    const totalProducts = await countDocuments(); 
+    const products = await ProductItem.find().skip(skip).limit(limit);
+    const totalProducts = await ProductItem.countDocuments();
 
-    if (products.length === 0) {
+    if (!products.length) {
       return res.status(404).json({ message: "No products found on this page" });
     }
 
-    const allProductsWithGroups = await Promise.all(
+    const productsWithGroups = await Promise.all(
       products.map(async (product) => {
-        const group = await _findById(product.groupName);
+        const group = await GroupItem.findById(product.groupName);
         return {
           ...product.toObject(),
           groupDetails: group || null,
@@ -67,23 +68,38 @@ export async function getAllProduct(req, res) {
       totalProducts,
       totalPages: Math.ceil(totalProducts / limit),
       currentPage: page,
-      products: allProductsWithGroups,
+      products: productsWithGroups,
     });
-
   } catch (error) {
     console.error("Error fetching products:", error);
     res.status(500).json({ error: error.message });
   }
 }
+export async function getAllProductForAdmin(req, res) {
+  try {
+    const products = await ProductItem.find();
+    const productsWithGroups = await Promise.all(
+      products.map(async (product) => {
+        const group = await GroupItem.findById(product.groupName);
+        return {
+          ...product.toObject(),
+          groupDetails: group || null,
+        };
+      })
+    );
 
+    res.status(200).json(productsWithGroups);
+  } catch (error) {
+    console.error("Error fetching all products for admin:", error);
+    res.status(500).json({ error: error.message });
+  }
+}
 
-
-
+// Get Products by Group
 export async function getProductsByGroup(req, res) {
   try {
     const { groupName } = req.params;
-    console.log({ groupName });
-    const products = await find({ groupName });
+    const products = await ProductItem.find({ groupName });
 
     res.status(200).json(products);
   } catch (error) {
@@ -92,42 +108,42 @@ export async function getProductsByGroup(req, res) {
   }
 }
 
+// Delete Product
 export async function DeleteProduct(req, res) {
   try {
     const { id } = req.params;
-    console.log("Group ID to delete:", id);
 
-    const productItem = await findById(id);
+    const productItem = await ProductItem.findById(id);
     if (!productItem) {
-      return res.status(404).json({ message: "Group not found." });
+      return res.status(404).json({ message: "Product not found." });
     }
 
+    // Remove file if exists
     if (productItem.filePath) {
       unlinkSync(productItem.filePath);
     }
 
-    const deletedProduct = await findByIdAndDelete(id);
-    if (deletedProduct) {
-      res.status(200).json({
-        message: "Product and associated image deleted successfully.",
-      });
-    } else {
-      res.status(404).json({ message: "Product not found." });
-    }
+    await ProductItem.findByIdAndDelete(id);
+
+    res.status(200).json({
+      message: "Product and associated image deleted successfully.",
+    });
   } catch (error) {
-    console.error("Error deleting Product:", error);
-    res.status(500).json({ message: "Failed to delete Product." });
+    console.error("Error deleting product:", error);
+    res.status(500).json({ message: "Failed to delete product." });
   }
 }
+
+// Get Single Product for Update (fetch data)
 export async function UpdateProductItem(req, res) {
   try {
     const { productId } = req.body;
 
-    const productItem = await findOne({ _id: productId });
-
+    const productItem = await ProductItem.findById(productId);
     if (!productItem) {
-      return res.status(404).json({ message: "Group item not found" });
+      return res.status(404).json({ message: "Product item not found" });
     }
+
     res.status(200).json({
       productName: productItem.productName,
       filePath: productItem.filePath,
@@ -138,9 +154,11 @@ export async function UpdateProductItem(req, res) {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
-}  
+}
+
+// Add or Update Product
 export function addUpdateProductItem(req, res) {
-  single("imageFile")(req, res, async (err) => {
+  upload.single("imageFile")(req, res, async (err) => {
     if (err) {
       return res
         .status(500)
@@ -149,26 +167,35 @@ export function addUpdateProductItem(req, res) {
 
     try {
       const { productId, productName, price, groupName, description } = req.body;
-      const imageFile = req.file ? req.file.filename : null;
-      const product = await findById({ _id: productId });
+      let product = await ProductItem.findById(productId);
+
       if (!product) {
         return res.status(404).json({ error: "Product not found" });
       }
 
+      // Update product fields
       product.productName = productName || product.productName;
       product.price = price || product.price;
       product.groupName = groupName || product.groupName;
-      product.description = description || product.description
-      if (imageFile) {
-        product.imageFile = imageFile;
+      product.description = description || product.description;
+
+      // Handle new image upload
+      if (req.file) {
+        if (product.filePath) {
+          unlinkSync(product.filePath); // Delete old image if exists
+        }
+        product.filePath = req.file.path;
       }
 
       await product.save();
 
-      res
-        .status(200)
-        .json({ status: true, message: "Product updated successfully" });
+      res.status(200).json({
+        status: true,
+        message: "Product updated successfully",
+        product,
+      });
     } catch (error) {
+      console.error("Failed to update product:", error);
       res
         .status(500)
         .json({ error: "Failed to update product. Please try again." });

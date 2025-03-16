@@ -1,4 +1,4 @@
-import User from "../models/userModel.js";
+import User from "../models/userModal.js";
 import bcrypt from "bcryptjs";
 import _default from "../utils/mailer.js";
 const { resetPasswordOtp } = _default;
@@ -9,7 +9,7 @@ import passport from "passport";
 import { default as axios } from "axios";
 
 import { Strategy as GitHubStrategy } from "passport-github2";
-import pkg from 'jsonwebtoken';
+import pkg from "jsonwebtoken";
 const { sign } = pkg;
 const { genSalt, hash, compare } = bcrypt;
 
@@ -38,7 +38,7 @@ export async function register(req, res) {
   }
 
   try {
-    let user = await findOne({ email });
+    let user = await User.findOne({ email });
 
     if (user) {
       if (user.otp === undefined) {
@@ -75,12 +75,12 @@ export async function login(req, res) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   try {
-    let user = await findOne({ email });
+    let user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User does not exist" });
     }
     if (user.otp !== undefined) {
-      await findByIdAndDelete(user.id);
+      await User.findByIdAndDelete(user.id);
       return res
         .status(404)
         .json({ message: "please Proper Register you profile" });
@@ -91,7 +91,7 @@ export async function login(req, res) {
     if (!emailRegex.test(email)) {
       return res.status(400).json({ msg: "Invalid email format" });
     }
-    const isPasswordValid = await compare(password, user.password);
+    const isPasswordValid = compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid password" });
     }
@@ -120,7 +120,7 @@ export async function verifyOtp(req, res) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
   try {
-    const user = await findOne({ email });
+    const user = await User.findOne({ email });
 
     if (!user || user.otp !== otp || user.otpExpires < Date.now()) {
       return res.status(400).json({ msg: "Invalid OTP" });
@@ -152,7 +152,7 @@ export async function requestPasswordReset(req, res) {
   }
 
   try {
-    const user = await findOne({ email });
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User does not exist" });
     }
@@ -176,7 +176,7 @@ export async function requestPasswordReset(req, res) {
 export async function verifyOtpAndUpdatePassword(req, res) {
   const { email, otp, newPassword } = req.body;
   try {
-    let user = await findOne({ email });
+    let user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User does not exist" });
     }
@@ -202,7 +202,7 @@ export async function verifyOtpAndUpdatePassword(req, res) {
 export async function adminLogin(req, res) {
   const { email, password } = req.body;
   try {
-    let user = await findOne({ email });
+    let user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User does not exist" });
     }
@@ -242,7 +242,7 @@ export async function getUserDetail(req, res) {
   try {
     const { userId } = req.body;
 
-    const user = await findById({ _id: userId });
+    const user = await User.findById({ _id: userId });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -257,7 +257,7 @@ export async function UpdateUserDetail(req, res) {
   try {
     const { email, name, mobile, address } = req.body;
 
-    const user = await findOne({ email });
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -278,7 +278,7 @@ export async function UpdateUserDetail(req, res) {
 export async function getUserCount(req, res) {
   try {
     const role = "user";
-    const userCount = await countDocuments({ role });
+    const userCount = await User.countDocuments({ role });
     res.status(200).json({ userCount });
   } catch (err) {
     console.error("Error fetching user count:", err);
@@ -288,7 +288,7 @@ export async function getUserCount(req, res) {
 export async function getAllUser(req, res) {
   try {
     const role = { $in: ["user", "delivery"] };
-    const users = await find({ role });
+    const users = await User.find({ role });
     res.status(200).json({ users });
   } catch (err) {
     console.error("Error fetching users:", err);
@@ -351,7 +351,7 @@ export async function githubCallback(req, res) {
       return res.status(400).send("GitHub account does not have a valid email");
     }
 
-    let user = await findOne({ email });
+    let user = await User.findOne({ email });
     if (!user) {
       const password = "GitHubUser";
       const hashedPassword = await hash(password, 10);
@@ -384,7 +384,7 @@ export async function UserUpdate(req, res) {
     console.log(id);
 
     const { name, email, mobile, address, role } = req.body;
-    const updatedUser = await findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       id,
       {
         $set: {
@@ -419,7 +419,7 @@ export async function DeleteUser(req, res) {
   const { id } = req.params;
 
   try {
-    const deletedUser = await findByIdAndDelete(id);
+    const deletedUser = await User.findByIdAndDelete(id);
 
     if (!deletedUser) {
       return res.status(404).json({
@@ -447,7 +447,7 @@ export async function GoogleRegister(req, res) {
   }
 
   try {
-    let user = await findOne({ email });
+    let user = await User.findOne({ email });
     if (!user) {
       const password = "GoogleUser";
       const hashedPassword = await hash(password, 10);
@@ -487,7 +487,7 @@ export async function DeliveryBoyRegister(req, res) {
       return res.status(400).json({ message: "Invalid email format" });
     }
 
-    let user = await findOne({ email });
+    let user = await User.findOne({ email });
     if (user) {
       return res.status(409).json({ message: "User already exists" });
     }
@@ -522,7 +522,7 @@ export async function BoyLogin(req, res) {
 
   try {
     // Check if the user exists
-    const user = await findOne({ email });
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "User does not exist" });
     }
@@ -535,7 +535,7 @@ export async function BoyLogin(req, res) {
     }
 
     // Verify the password
-    const isPasswordValid = await compare(password, user.password);
+    const isPasswordValid = compare(password, user.password);
     if (!isPasswordValid) {
       return res.status(401).json({ message: "Invalid password" });
     }
@@ -559,7 +559,7 @@ export async function BoyLogin(req, res) {
 }
 export async function logOut(req, res) {
   const id = req.params.id;
-  const user = await findById(id);
+  const user = await User.findById(id);
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
