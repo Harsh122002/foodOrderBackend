@@ -25,11 +25,7 @@ const orderSchema = new Schema({
   },
   discountName:{ type: String},
   discountPercentage: { type: Number },
-  deliveryCharge: { type: Number },
   couponCode: { type: String },
-  couponDiscount: { type: Number },
-  orderNote: { type: String },
-  orderRef: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 

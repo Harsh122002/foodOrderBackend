@@ -1,13 +1,66 @@
 import { Router } from "express";
 const router = Router();
-import { register, verifyOtp, login, requestPasswordReset, verifyOtpAndUpdatePassword, adminLogin, getUserCount, getAllUser, githubLogin, githubCallback, DeleteUser, UserUpdate, getUserDetail, UpdateUserDetail, GoogleRegister, DeliveryBoyRegister, BoyLogin, logOut } from "../controllers/authController.js";
-import {   addUpdateGroup, DeleteGroup, getAllGroups, UpdateGroupItem } from "../controllers/group.js";
+import {
+  register,
+  verifyOtp,
+  login,
+  requestPasswordReset,
+  verifyOtpAndUpdatePassword,
+  adminLogin,
+  getUserCount,
+  getAllUser,
+  githubLogin,
+  githubCallback,
+  DeleteUser,
+  UserUpdate,
+  getUserDetail,
+  UpdateUserDetail,
+  GoogleRegister,
+  DeliveryBoyRegister,
+  BoyLogin,
+  logOut,
+} from "../controllers/authController.js";
+import {
+  addUpdateGroup,
+  DeleteGroup,
+  getAllGroups,
+  UpdateGroupItem,
+} from "../controllers/group.js";
 import authenticateJWT from "../middleware/authMiddleware.js";
-import { addProductItem, getAllProduct, getProductsByGroup, DeleteProduct, UpdateProductItem, addUpdateProductItem, getAllProductForAdmin } from "../controllers/product.js";
-import { OrderDetail, getAllOrder, OrderDelete, getAllOrderStatuses, getAllPendingOrder, updateOrderStatus, getAllCompleteOrder, getAllDeclinedOrder, getAllRunningOrder, getAllPaymentAmount, updateRating, getMonthlyCompleteOrder, getMonthlyOrderAmounts } from "../controllers/order.js";
+import {
+  addProductItem,
+  getAllProduct,
+  getProductsByGroup,
+  DeleteProduct,
+  UpdateProductItem,
+  addUpdateProductItem,
+  getAllProductForAdmin,
+} from "../controllers/product.js";
+import {
+  OrderDetail,
+  getAllOrder,
+  OrderDelete,
+  getAllOrderStatuses,
+  getAllPendingOrder,
+  updateOrderStatus,
+  getAllCompleteOrder,
+  getAllDeclinedOrder,
+  getAllRunningOrder,
+  getAllPaymentAmount,
+  updateRating,
+  getMonthlyCompleteOrder,
+  getMonthlyOrderAmounts,
+} from "../controllers/order.js";
 import { GeneratePdf } from "../controllers/generatePdf.js";
 import { Payment, PaymentVerify } from "../controllers/payment.js";
-import { RetrievalAllProductForDiscount } from "../controllers/discount.js";
+import {
+  AllDiscount,
+  DiscountAdd,
+  DiscountDelete,
+  DiscountForId,
+  RetrievalAllProductForDiscount,
+  UpdateDiscount,
+} from "../controllers/discount.js";
 
 router.post("/register", register);
 router.post("/googleRegister", GoogleRegister);
@@ -55,7 +108,13 @@ router.get("/getMonthlyOrderAmounts", getMonthlyOrderAmounts);
 
 router.get("/auth/github", githubLogin);
 router.get("/logout/:id", logOut);
-router.get("/getAllProductForAdmin",getAllProductForAdmin)
+router.get("/getAllProductForAdmin", getAllProductForAdmin);
 router.get("/auth/github/callback", githubCallback);
-router.post("/AllDiscountProduct", RetrievalAllProductForDiscount);
+router.get("/AllDiscountProduct", RetrievalAllProductForDiscount);
+router.post("/addDiscount", DiscountAdd);
+router.get("/allDiscount", AllDiscount);
+router.get("/DiscountForId/:id", DiscountForId);
+router.put("/UpdateDiscount/:id", UpdateDiscount);
+router.delete(`/discountDelete/:id`,DiscountDelete)
+
 export default router;

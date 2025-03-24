@@ -77,7 +77,32 @@ async function GeneratePDF(orderData, outputPath, OrderId) {
 
       currentYPosition += rowSpacing; // Move to the next row position
     });
-
+   // Total Amount
+   doc
+   .font("Helvetica-Bold")
+   .fontSize(14)
+   .text(
+     `Discount Name: Rs. ${orderData.discountName}`,
+     50,
+     currentYPosition + 20
+    );
+    doc
+   .font("Helvetica-Bold")
+   .fontSize(14)
+   .text(
+     `Discount Percentage: Rs. ${orderData.discountPercentage}%`,
+     50,
+     currentYPosition + 40
+    );
+    doc
+   .font("Helvetica-Bold")
+   .fontSize(14)
+   .text(
+     `CouponCode: Rs. ${orderData.couponCode}`,
+     50,
+     currentYPosition + 60
+   );
+ doc.moveDown();
     // Total Amount
     doc
       .font("Helvetica-Bold")
@@ -85,7 +110,7 @@ async function GeneratePDF(orderData, outputPath, OrderId) {
       .text(
         `Total Amount: Rs. ${orderData.totalAmount.toFixed(2)}`,
         50,
-        currentYPosition + 20
+        currentYPosition + 80
       );
     doc.moveDown();
 
@@ -96,7 +121,7 @@ async function GeneratePDF(orderData, outputPath, OrderId) {
       .text(
         `Payment Method: ${orderData.paymentMethod}`,
         50,
-        currentYPosition + 40
+        currentYPosition + 100
       );
     doc.moveDown();
 

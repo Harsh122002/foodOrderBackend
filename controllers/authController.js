@@ -1,7 +1,7 @@
 import User from "../models/userModal.js";
 import bcrypt from "bcryptjs";
 import _default from "../utils/mailer.js";
-const { resetPasswordOtp } = _default;
+const { resetPasswordOtp,sendOtpEmail } = _default;
 import __default from "../utils/mailer.js";
 const { sendDeliveryBoysInformation } = __default;
 
@@ -39,13 +39,17 @@ export async function register(req, res) {
 
   try {
     let user = await User.findOne({ email });
+    console.log("user",user);
+    
 
     if (user) {
       if (user.otp === undefined) {
         return res.status(400).json({ msg: "User already exists" });
       }
-      await deleteOne({ email });
-      console.log("User deleted successfully");
+      else {
+        await User.deleteOne({ email });
+        console.log("User deleted successfully");
+      }
     }
 
     user = new User({
@@ -62,6 +66,7 @@ export async function register(req, res) {
 
     await user.save();
     sendOtpEmail(user.email, user.otp);
+
 
     res.status(200).json({ msg: "OTP sent to email" });
   } catch (err) {
