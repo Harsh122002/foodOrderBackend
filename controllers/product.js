@@ -1,21 +1,23 @@
 import ProductItem from "../models/productModal.js";
 import GroupItem from "../models/groupModal.js"; // Assuming this model contains group info
 import upload from "../middleware/multerConfig.js";
-import { unlinkSync } from "fs";
+import { unlinkSync, existsSync } from "fs";
+import { log } from "console";
 
 // Add Product Item
 export function addProductItem(req, res) {
  upload.single("imageFile")(req, res, async (err) => {
     if (err) return res.status(500).json({ error: err.message });
 
-    try {
-      if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+   try {
+     if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
-      const { productName, price, groupName, description } = req.body;
-      const filePath = req.file.path;
+     const { productName, price, groupName, description } = req.body;
+     const filePath = req.file.path;
 
-      // Check if group exists
-      const existingGroup = await Group.findById(groupName);
+     // Check if group exists
+     const existingGroup = await GroupItem.findById({ _id: groupName })
+   ;
       if (!existingGroup) {
         return res.status(404).json({ error: "Group not found" });
       }
@@ -34,7 +36,9 @@ export function addProductItem(req, res) {
         message: "Product item added successfully",
         product: newProductItem,
       });
-    } catch (error) {
+   } catch (error) {
+     console.log(error);
+     
       res.status(500).json({ error: error.message });
     }
   });
@@ -44,7 +48,7 @@ export function addProductItem(req, res) {
 export async function getAllProduct(req, res) {
   try {
     const page = parseInt(req.params.page) || 1;
-    const limit = 8;
+    const limit = 12;
     const skip = (page - 1) * limit;
 
     const products = await ProductItem.find().skip(skip).limit(limit);
@@ -56,7 +60,7 @@ export async function getAllProduct(req, res) {
 
     const productsWithGroups = await Promise.all(
       products.map(async (product) => {
-        const group = await GroupItem.findById(product.groupName);
+        const group = await GroupItem.findById({ _id: product.groupName });
         return {
           ...product.toObject(),
           groupDetails: group || null,
@@ -80,7 +84,7 @@ export async function getAllProductForAdmin(req, res) {
     const products = await ProductItem.find();
     const productsWithGroups = await Promise.all(
       products.map(async (product) => {
-        const group = await GroupItem.findById(product.groupName);
+        const group = await GroupItem.findOne({ _id: product.groupName });
         return {
           ...product.toObject(),
           groupDetails: group || null,
@@ -113,24 +117,33 @@ export async function DeleteProduct(req, res) {
   try {
     const { id } = req.params;
 
+    // Find the product by ID
     const productItem = await ProductItem.findById(id);
     if (!productItem) {
       return res.status(404).json({ message: "Product not found." });
     }
 
-    // Remove file if exists
-    if (productItem.filePath) {
-      unlinkSync(productItem.filePath);
+    // Remove associated file if it exists
+    if (productItem.filePath && existsSync(productItem.filePath)) {
+      try {
+        unlinkSync(productItem.filePath);
+        console.log("File deleted:", productItem.filePath);
+      } catch (fileError) {
+        console.error("Error deleting file:", fileError.message);
+      }
+    } else {
+      console.warn("File not found or invalid path:", productItem.filePath);
     }
 
+    // Delete the product
     await ProductItem.findByIdAndDelete(id);
 
-    res.status(200).json({
+    return res.status(200).json({
       message: "Product and associated image deleted successfully.",
     });
   } catch (error) {
     console.error("Error deleting product:", error);
-    res.status(500).json({ message: "Failed to delete product." });
+    return res.status(500).json({ message: "Failed to delete product." });
   }
 }
 
@@ -139,7 +152,7 @@ export async function UpdateProductItem(req, res) {
   try {
     const { productId } = req.body;
 
-    const productItem = await ProductItem.findById(productId);
+    const productItem = await ProductItem.findOne({ _id: productId });
     if (!productItem) {
       return res.status(404).json({ message: "Product item not found" });
     }
@@ -167,7 +180,7 @@ export function addUpdateProductItem(req, res) {
 
     try {
       const { productId, productName, price, groupName, description } = req.body;
-      let product = await ProductItem.findById(productId);
+      let product = await ProductItem.findOne({ _id: productId });
 
       if (!product) {
         return res.status(404).json({ error: "Product not found" });

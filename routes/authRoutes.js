@@ -21,6 +21,7 @@ import {
   logOut,
 } from "../controllers/authController.js";
 import {
+  addGroup,
   addUpdateGroup,
   DeleteGroup,
   getAllGroups,
@@ -68,7 +69,7 @@ router.post("/deliveryBoyRegister", DeliveryBoyRegister);
 router.post("/verify-otp", verifyOtp);
 router.post("/login", login);
 router.post("/boyLogin", BoyLogin);
-
+router.post("/addGroup",authenticateJWT, addGroup);
 router.post("/request-password-reset", requestPasswordReset);
 router.post("/verify-password", verifyOtpAndUpdatePassword);
 router.post("/adminLogin", adminLogin);
@@ -100,7 +101,7 @@ router.post("/updateRating", updateRating);
 router.post("/updateGroup", UpdateGroupItem);
 router.post("/update-Group", addUpdateGroup);
 router.post("/updateProduct", UpdateProductItem);
-router.post("/update-Proudct", addUpdateProductItem);
+router.post("/update-Product", addUpdateProductItem);
 router.put("/update-user/:id", UserUpdate);
 router.delete("/delete-user/:id", DeleteUser);
 router.get("/getMonthlyComplete", getMonthlyCompleteOrder);

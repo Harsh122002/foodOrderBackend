@@ -212,8 +212,8 @@ export async function adminLogin(req, res) {
       return res.status(404).json({ message: "User does not exist" });
     }
 
-    if (user.role === "user") {
-      return res.status(403).json({ message: "You are the owner" });
+    if (user.role === "user" ||user.role === "delivery") {
+      return res.status(403).json({ message: "You are not the owner" });
     }
 
     const isPasswordValid = await compare(password, user.password);
@@ -572,3 +572,4 @@ export async function logOut(req, res) {
   await user.save();
   res.status(200).json({ message: "Logged out successfully" });
 }
+

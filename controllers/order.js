@@ -424,7 +424,7 @@ export async function updateRating(req, res) {
   const { orderId, rating, description } = req.body;
 
   try {
-    const order = await Order.findById(orderId);
+    const order = await Order.findById({_id:orderId});
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });

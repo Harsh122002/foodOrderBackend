@@ -81,16 +81,16 @@ async function GeneratePDF(orderData, outputPath, OrderId) {
    doc
    .font("Helvetica-Bold")
    .fontSize(14)
-   .text(
-     `Discount Name: Rs. ${orderData.discountName}`,
+   .text(orderData.discountName?
+     `Discount Name: Rs. ${orderData.discountName}`:"",
      50,
      currentYPosition + 20
     );
     doc
    .font("Helvetica-Bold")
    .fontSize(14)
-   .text(
-     `Discount Percentage: Rs. ${orderData.discountPercentage}%`,
+   .text(orderData.discountPercentage?
+     `Discount Percentage: Rs. ${orderData.discountPercentage}%`:"",
      50,
      currentYPosition + 40
     );
@@ -98,10 +98,13 @@ async function GeneratePDF(orderData, outputPath, OrderId) {
    .font("Helvetica-Bold")
    .fontSize(14)
    .text(
-     `CouponCode: Rs. ${orderData.couponCode}`,
-     50,
-     currentYPosition + 60
-   );
+    orderData?.couponCode 
+      ? `Coupon Code: ${orderData.couponCode}` 
+      : '',
+    50,
+    currentYPosition + 60
+  );
+  
  doc.moveDown();
     // Total Amount
     doc

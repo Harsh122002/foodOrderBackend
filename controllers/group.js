@@ -1,6 +1,6 @@
 import GroupItem from "../models/groupModal.js";
 import upload from "../middleware/multerConfig.js";
-import { unlinkSync } from "fs";
+import { unlinkSync, existsSync } from "fs";
 
 export function addGroup(req, res) {
   upload.single("imageFile")(req, res, async (err) => {
@@ -16,14 +16,14 @@ export function addGroup(req, res) {
       const { groupName } = req.body;
       const filePath = req.file.path;
 
-      const newGroup = new Group({
+      const newGroup = new GroupItem({
         groupName,
         filePath,
       });
 
       await newGroup.save();
       res
-        .status(201)
+        .status(200)
         .json({ message: "Group item added successfully", newGroup });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -49,11 +49,17 @@ export async function DeleteGroup(req, res) {
       return res.status(404).json({ message: "Group not found." });
     }
 
-    if (group.filePath) {
-      unlinkSync(group.filePath);
+    if (GroupItem.filePath && existsSync(GroupItem.filePath)) {
+      try {
+        unlinkSync(GroupItem.filePath);
+        console.log("File deleted:", GroupItem.filePath);
+      } catch (fileError) {
+        console.error("Error deleting file:", fileError.message);
+      }
+    } else {
+      console.warn("File not found or invalid path:", GroupItem.filePath);
     }
-
-    await Group.findByIdAndDelete(id);
+    await GroupItem.findByIdAndDelete(id);
     res
       .status(200)
       .json({ message: "Group and associated image deleted successfully." });
@@ -61,9 +67,6 @@ export async function DeleteGroup(req, res) {
     res.status(500).json({ message: "Failed to delete group." });
   }
 }
-
-
-
 
 export async function UpdateGroupItem(req, res) {
   try {
@@ -83,7 +86,7 @@ export async function UpdateGroupItem(req, res) {
 }
 
 export function addUpdateGroup(req, res) {
- upload.single("imageFile")(req, res, async (err) => {
+  upload.single("imageFile")(req, res, async (err) => {
     if (err) {
       return res
         .status(500)
