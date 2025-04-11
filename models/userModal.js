@@ -16,6 +16,10 @@ const UserSchema = new Schema({
     enum: ["user", "admin", "delivery"],
     default: "user",
   },
+  location: {
+    latitude: { type: Number, default: null },
+    longitude: { type: Number, default: null },
+  },
 });
 
 const User = model("User", UserSchema);

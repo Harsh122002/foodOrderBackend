@@ -64,7 +64,7 @@ export async function getAllOrder(req, res) {
               name: product.name,
               quantity: product.quantity,
               price: product.price,
-              image: productInfo.filePath,
+image: productInfo?.filePath || null
             };
           })
         );
@@ -205,27 +205,38 @@ export async function getAllPendingOrder(req, res) {
 
 export async function updateOrderStatus(req, res) {
   try {
-    const { orderId, status } = req.body;
+    const { orderId, status, deliveryBoyName, boylatitude, boylongitude } = req.body;
+
     const order = await Order.findById(orderId);
+    if (!order) {
+      return res.status(404).json({ error: "Order not found" });
+    }
+
     const user = await User.findById(order.userId);
-    sendOrderConfirmation(user.email, status);
-    const allDeliveryBoy = await User.find({
-      role: "delivery",
-      status: "online",
-    });
-    console.log(allDeliveryBoy);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    await sendOrderConfirmation(user.email, status);
 
     const updatedOrder = await Order.findByIdAndUpdate(
       orderId,
-      { status },
+      {
+        status,
+        deliveryBoyName,
+        boylatitude,
+        boylongitude
+      },
       { new: true }
     );
+
     res.status(200).json(updatedOrder);
   } catch (error) {
-    console.error("Error updating order status:", error);
+    console.error("Error updating order status:", error.message);
     res.status(500).json({ error: "Failed to update order status" });
   }
 }
+
 
 export async function getAllCompleteOrder(req, res) {
   try {
@@ -424,7 +435,7 @@ export async function updateRating(req, res) {
   const { orderId, rating, description } = req.body;
 
   try {
-    const order = await Order.findById({_id:orderId});
+    const order = await Order.findById({ _id: orderId });
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
@@ -555,3 +566,105 @@ export async function getMonthlyOrderAmounts(req, res) {
     });
   }
 }
+
+
+
+export const fetchOrderByBoyName = async (req, res) => {
+  try {
+    const { boyName } = req.body;
+
+    if (!boyName) {
+      return res.status(400).json({ message: "Delivery boy name is required" });
+    }
+
+    const orders = await Order.find({
+      deliveryBoyName: boyName,
+      status: "running",
+    });
+
+    if (!orders || orders.length === 0) {
+      return res.status(404).json({ message: "No orders found for this delivery boy" });
+    }
+
+    const enrichedOrders = await Promise.all(
+      orders.map(async (order) => {
+
+        // 🔍 Fetch user details by userId
+        const user = await User.findById(order.userId);
+
+        const enrichedProducts = await Promise.all(
+          order.products.map(async (product) => {
+            const productInfo = await ProductItem.findOne({ productName: product.name });
+
+            return {
+              name: product.name,
+              quantity: product.quantity,
+              price: product.price,
+              filePath: productInfo?.filePath || null,
+              totalPrice: product.quantity * product.price,
+            };
+          })
+        );
+
+        return {
+          id: order._id,
+          status: order.status,
+          address: order.address,
+          totalAmount: order.totalAmount,
+          products: enrichedProducts,
+          createdAt: order.createdAt,
+          paymentMethod: order.paymentMethod,
+          rating: order.rating || null,
+          user: user ? {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            phone: user.mobile,
+          } : null
+        };
+      })
+    );
+
+    res.status(200).json(enrichedOrders);
+  } catch (error) {
+    console.error("Error fetching orders by delivery boy's name:", error);
+    res.status(500).json({ error: "Failed to fetch orders by delivery boy's name" });
+  }
+};
+
+export const AllCompletedOrderForUserId = async (req, res) => {
+  try {
+    const { deliveryBoyName } = req.body;
+
+    if (!deliveryBoyName) {
+      return res.status(400).json({ message: "User ID is required" });
+    }
+
+    // Get first day of current month
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Get all completed orders for the current month
+    const orders = await Order.find({
+      deliveryBoyName,
+      status: "completed",
+      // createdAt: { $gte: startOfMonth }
+    });
+
+    // Filter cash payment orders
+    const cashOrders = orders.filter(order => order.paymentMethod === "cash");
+
+    // Calculate total cash income
+    const totalCashIncome = cashOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+
+    res.status(200).json({
+      success: true,
+      orders,
+      totalCashIncome
+    });
+
+  } catch (error) {
+    console.error("Error in AllCompletedOrderForUserId:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

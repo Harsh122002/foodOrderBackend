@@ -19,6 +19,7 @@ import {
   DeliveryBoyRegister,
   BoyLogin,
   logOut,
+  GetAllOnlineBoy,
 } from "../controllers/authController.js";
 import {
   addGroup,
@@ -36,6 +37,7 @@ import {
   UpdateProductItem,
   addUpdateProductItem,
   getAllProductForAdmin,
+  ProductsByGroupId,
 } from "../controllers/product.js";
 import {
   OrderDetail,
@@ -51,6 +53,8 @@ import {
   updateRating,
   getMonthlyCompleteOrder,
   getMonthlyOrderAmounts,
+  fetchOrderByBoyName,
+  AllCompletedOrderForUserId,
 } from "../controllers/order.js";
 import { GeneratePdf } from "../controllers/generatePdf.js";
 import { Payment, PaymentVerify } from "../controllers/payment.js";
@@ -117,5 +121,8 @@ router.get("/allDiscount", AllDiscount);
 router.get("/DiscountForId/:id", DiscountForId);
 router.put("/UpdateDiscount/:id", UpdateDiscount);
 router.delete(`/discountDelete/:id`,DiscountDelete)
-
+router.get("/boy", GetAllOnlineBoy);
+router.post("/AllCompletedOrderForUserId",AllCompletedOrderForUserId)
+router.post("/fetchOrderByBoyName", fetchOrderByBoyName);
+router.get("/getProductsByGroupId/:id", ProductsByGroupId);
 export default router;

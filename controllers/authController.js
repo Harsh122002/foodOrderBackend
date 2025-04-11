@@ -4,12 +4,15 @@ import _default from "../utils/mailer.js";
 const { resetPasswordOtp,sendOtpEmail } = _default;
 import __default from "../utils/mailer.js";
 const { sendDeliveryBoysInformation } = __default;
+import Order from "../models/orderModal.js";
 
 import passport from "passport";
 import { default as axios } from "axios";
 
 import { Strategy as GitHubStrategy } from "passport-github2";
 import pkg from "jsonwebtoken";
+import { io } from "../app.js";
+import { log } from "console";
 const { sign } = pkg;
 const { genSalt, hash, compare } = bcrypt;
 
@@ -92,6 +95,9 @@ export async function login(req, res) {
     }
     if (user.role === "admin") {
       return res.status(403).json({ message: "You are the owner" });
+    }
+    if (user.role === "delivery") {
+      return res.status(403).json({ message: "You are the deliveryBoy" });
     }
     if (!emailRegex.test(email)) {
       return res.status(400).json({ msg: "Invalid email format" });
@@ -263,6 +269,8 @@ export async function UpdateUserDetail(req, res) {
     const { email, name, mobile, address } = req.body;
 
     const user = await User.findOne({ email });
+    console.log(user);
+    
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
@@ -523,7 +531,7 @@ export async function DeliveryBoyRegister(req, res) {
   }
 }
 export async function BoyLogin(req, res) {
-  const { email, password, role } = req.body;
+  const { email, password, role, latitude, longitude } = req.body;
 
   try {
     // Check if the user exists
@@ -534,9 +542,7 @@ export async function BoyLogin(req, res) {
 
     // Check if the user's role is 'delivery'
     if (user.role !== role) {
-      return res
-        .status(403)
-        .json({ message: "Access denied: Not a delivery user" });
+      return res.status(403).json({ message: "Access denied: Not a delivery user" });
     }
 
     // Verify the password
@@ -547,29 +553,80 @@ export async function BoyLogin(req, res) {
 
     // Generate JWT token
     const payload = { user: { id: user.id } };
-    const token = sign(payload, process.env.JWT_SECRET, {
-      expiresIn: "1h",
-    });
+    const token = sign(payload, process.env.JWT_SECRET, { expiresIn: "1h" });
 
-    // Respond with the token and user details
+    // Update user status and location
+    user.location.latitude = latitude;
+    user.location.longitude = longitude;
+    user.status = "online";
+    await user.save();
+
+    // ✅ Automatically reset status and location after 1 hour
+    setTimeout(async () => {
+      try {
+        await User.findByIdAndUpdate(user._id, {
+          $set: { 
+            status: "offline",
+            "location.latitude": null,
+            "location.longitude": null 
+          }
+        });
+        console.log(`User ${user.email} set to offline after 1 hour`);
+      } catch (error) {
+        console.error("Error resetting user status:", error);
+      }
+    }, 60 * 60 * 1000); // 1 hour in milliseconds
+
+    // Respond with token and user details
     res.status(200).json({
       message: "Login successful",
       token,
       userId: user._id,
     });
+
   } catch (err) {
     console.error("Error during login:", err.message);
     res.status(500).json({ message: "Server error" });
   }
 }
+
 export async function logOut(req, res) {
   const id = req.params.id;
   const user = await User.findById(id);
   if (!user) {
     return res.status(404).json({ message: "User not found" });
   }
+  user.location.latitude = "";
+  user.location.longitude = "";
   user.status = "offline";
   await user.save();
   res.status(200).json({ message: "Logged out successfully" });
 }
 
+export async function GetAllOnlineBoy(req, res) {
+  try {
+    const onlineBoys = await User.find({
+      $and: [{ role: "delivery" }, { status: "online" }]
+    });
+    if (!onlineBoys || onlineBoys.length === 0) {
+      return res.status(404).json({ message: "No online delivery boys found" });
+    }
+
+    const deliveryBoyIds = onlineBoys.map((boy) => boy._id);
+    const assignedOrders = await Order.find({
+      deliveryBoyId: { $in: deliveryBoyIds },
+      status: { $in: ["pending", "running"] }
+    });
+
+    const assignedBoyIds = assignedOrders.map(order => order.deliveryBoyId.toString());
+    const availableBoys = onlineBoys.filter(boy => !assignedBoyIds.includes(boy._id.toString()));
+
+    if (availableBoys.length === 0) {
+      return res.status(404).json({ message: "No available delivery boys without recent orders" });
+    }
+
+    res.status(200).json({ availableBoys });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+}

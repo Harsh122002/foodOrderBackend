@@ -27,6 +27,8 @@ const orderSchema = new Schema({
   discountPercentage: { type: Number },
   deliveryBoyName: { type: String },
   couponCode: { type: String },
+  boylatitude: { type: Number },
+  boylongitude: { type: Number },
   createdAt: { type: Date, default: Date.now },
 });
 

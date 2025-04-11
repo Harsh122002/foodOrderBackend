@@ -215,3 +215,14 @@ export function addUpdateProductItem(req, res) {
     }
   });
 }
+
+export const ProductsByGroupId = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const products = await ProductItem.find({ groupName: id });
+    res.status(200).json(products);
+  } catch (error) {
+    console.error("Error fetching products by group ID:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+}
