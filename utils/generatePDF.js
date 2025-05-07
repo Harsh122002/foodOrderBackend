@@ -12,7 +12,7 @@ async function GeneratePDF(orderData, outputPath, OrderId) {
     doc
       .font("Helvetica-Bold")
       .fontSize(24)
-      .text("Place Your Order", { align: "center" });
+      .text("HR FOOD-JUNAGADH.", { align: "center" });
 
     // Order ID
     doc.moveDown();
