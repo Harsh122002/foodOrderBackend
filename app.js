@@ -23,6 +23,10 @@ app.use("/groups", express.static("groups"));
 // API Routes
 app.use("/api/auth", authRoutes);
 
+app.get("/", (req, res) => {
+  res.send("Hello from Vercel Express App!");
+});
+
 // Start the server
 app.listen(5000, () => {
   console.log(`Server running on port 5000`);
