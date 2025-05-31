@@ -11,8 +11,7 @@ import { default as axios } from "axios";
 
 import { Strategy as GitHubStrategy } from "passport-github2";
 import pkg from "jsonwebtoken";
-import { io } from "../app.js";
-import { log } from "console";
+
 const { sign } = pkg;
 const { genSalt, hash, compare } = bcrypt;
 

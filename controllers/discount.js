@@ -3,7 +3,6 @@ import User from "../models/userModal.js";
 import ProductItem from "../models/productModal.js";
 import Discount from "../models/discount.js";
 import GroupItem from "../models/groupModal.js";
-import cron from 'node-cron';
 
 import upload from "../middleware/multerConfig.js";
 

@@ -4,7 +4,6 @@ import ProductItem from "../models/productModal.js";
 import mailer from "../utils/mailer.js";
 import User from "../models/userModal.js";
 const { sendOrderConfirmation, deleteOrderConfirmation } = mailer;
-import moment from "moment";
 
 export async function OrderDetail(req, res) {
   const orderData = req.body;
