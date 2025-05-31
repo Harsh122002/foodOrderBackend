@@ -7,6 +7,5 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
-console.log("Razorpay instance:", razorpay); // To check
 
 export default razorpay; // ✅ Directly export the instance
