@@ -8,8 +8,17 @@
   ],
   "routes": [
     {
+      "src": "/groups/(.*)",
+      "dest": "/groups/$1"
+    },
+    {
       "src": "/api/auth/(.*)",
       "dest": "app.js"
     }
-  ]
+  ],
+  "functions": {
+    "app.js": {
+      "includeFiles": "groups/**"
+    }
+  }
 }
