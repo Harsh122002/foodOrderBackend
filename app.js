@@ -4,6 +4,11 @@ import dotenv from "dotenv";
 import cors from "cors";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
+import path from "path";
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 dotenv.config();
 
@@ -18,7 +23,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cors());
 
 // Static file serving
-app.use("/groups", express.static("groups"));
+app.use("/groups", express.static(path.join(__dirname, "groups")));
 
 // API Routes
 app.use("/api/auth", authRoutes);
