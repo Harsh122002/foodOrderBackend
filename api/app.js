@@ -3,8 +3,8 @@ import dotenv from "dotenv";
 import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
-import connectDB from "./config/db.js";
-import authRoutes from "./routes/authRoutes.js";
+import connectDB from "../config/db.js";
+import authRoutes from "../routes/authRoutes.js";
 
 // __dirname workaround for ES modules
 const __filename = fileURLToPath(import.meta.url);
