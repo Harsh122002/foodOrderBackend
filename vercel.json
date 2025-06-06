@@ -1,10 +1,11 @@
 {
   "version": 2,
-  "functions": {
-    "app.js": {
-      "includeFiles": "groups/**"
+  "builds": [
+    {
+      "src": "app.js",
+      "use": "@vercel/node"
     }
-  },
+  ],
   "routes": [
     {
       "src": "/groups/(.*)",
