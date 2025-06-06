@@ -12,7 +12,7 @@
     },
     {
       "src": "/api/auth/(.*)",
-      "dest": "/api/app.js"
+      "dest": "/api/app.js" 
     }
   ]
 }
