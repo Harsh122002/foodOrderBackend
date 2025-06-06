@@ -2,6 +2,7 @@ import GeneratePDF from "../utils/generatePDF.js";
 import Order from "../models/orderModal.js";
 
 // Generate and send PDF as a Buffer (works on Vercel)
+
 export async function GeneratePdf(req, res) {
   const { orderId } = req.body;
 
@@ -15,16 +16,12 @@ export async function GeneratePdf(req, res) {
       return res.status(404).json({ error: "Order not found" });
     }
 
-    // Generate PDF as buffer
-    const pdfBuffer = await GeneratePDF(orderData); // <-- must return a buffer
+    const pdfBuffer = await GeneratePDF(orderData, orderId);
 
-    // Send PDF as response
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${orderId}.pdf"`);
     res.send(pdfBuffer);
-
   } catch (error) {
-    console.error("Error generating/sending PDF:", error);
     res.status(500).json({ error: "Failed to generate and send PDF" });
   }
 }
