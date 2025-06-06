@@ -24,7 +24,7 @@ export async function GeneratePdf(req, res) {
     }
 
     // Prepare output directory
-    const outputDir = join(__dirname, "../pdf");
+    const outputDir = join(__dirname, "../tmp");
     if (!existsSync(outputDir)) mkdirSync(outputDir, { recursive: true });
 
     // Define output path
