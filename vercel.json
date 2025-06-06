@@ -1,11 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "app.js",
-      "use": "@vercel/node"
+  "functions": {
+    "app.js": {
+      "includeFiles": "groups/**"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/groups/(.*)",
@@ -15,10 +14,5 @@
       "src": "/api/auth/(.*)",
       "dest": "app.js"
     }
-  ],
-  "functions": {
-    "app.js": {
-      "includeFiles": "groups/**"
-    }
-  }
+  ]
 }
