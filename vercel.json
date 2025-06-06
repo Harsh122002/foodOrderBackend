@@ -15,5 +15,6 @@
       "src": "/api/auth/(.*)",
       "dest": "app.js"
     }
-  ]
+  ],
+  "includeFiles": ["groups/**"]
 }
